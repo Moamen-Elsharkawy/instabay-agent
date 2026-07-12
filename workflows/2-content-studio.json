@@ -1,0 +1,1354 @@
+{
+  "name": "InstaBay - 2 Content Studio",
+  "nodes": [
+    {
+      "id": "sched2",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        -120
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wh2",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        80
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-studio",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "5baf23ec-27d3-4b87-bc2e-ca01811dc621"
+    },
+    {
+      "id": "code_init2",
+      "name": "Init Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst isWebhook = !!(j && (j.webhookUrl || j.headers));\nconst body = (j && j.body) || {};\nreturn [{ json: {\n  run_id: 'wf2-' + $execution.id,\n  started_at: new Date().toISOString(),\n  trigger: isWebhook ? 'webhook' : 'schedule',\n  note: body.note || ''\n}}];"
+      }
+    },
+    {
+      "id": "http_cost_before",
+      "name": "Cost Before",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        420,
+        0
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "parameters": {
+        "method": "GET",
+        "url": "https://openrouter.ai/api/v1/auth/key",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "sh_read_brand",
+      "name": "Read Brand",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        620,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Brand"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "sh_read_config",
+      "name": "Read Config",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        820,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "sh_read_learn",
+      "name": "Read Learnings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1020,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Learnings"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "sh_read_cal",
+      "name": "Read Calendar",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1220,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calendar"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_brief2",
+      "name": "Build Creative Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const parseMaybe = v => { if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch(e){ return v; } };\nconst brandRows = $('Read Brand').all().map(i=>i.json).filter(r=>r.brand_name);\nif (!brandRows.length) throw new Error('No brand constitution found. Run WF1 first.');\nconst brandRaw = brandRows[brandRows.length-1];\nconst brand = {};\nfor (const [k,v] of Object.entries(brandRaw)) { if (k !== 'one_pager_md' && k !== 'row_number') brand[k] = parseMaybe(v); }\nconst cfgRows = $('Read Config').all().map(i=>i.json).filter(r=>r.key);\nconst config = Object.fromEntries(cfgRows.map(r=>[r.key, String(r.value)]));\nconst batch = parseInt(config.batch_counter || '1', 10);\nconst learnRows = $('Read Learnings').all().map(i=>i.json).filter(r=>r.directive);\nconst learnings = learnRows.filter(r=>String(r.applied_in_batch)===String(batch)).map(l=>({type:l.insight_type, dimension:l.dimension, directive:l.directive, evidence:l.evidence}));\nconst calRows = $('Read Calendar').all().map(i=>i.json).filter(r=>r.post_id);\nconst pastTopics = calRows.map(r=>r.topic).filter(Boolean);\nconst postsPerBatch = parseInt(config.posts_per_batch || '7', 10);\nconst cadence = (typeof brand.posting_cadence === 'object' && brand.posting_cadence) ? brand.posting_cadence : {slots:[{time:'20:00',label:'evening'}], formats:{reel:1,carousel:1,image:5}};\nconst start = DateTime.now().setZone('Africa/Cairo').plus({days:1});\nconst days = [];\nfor (let d=0; d<postsPerBatch; d++) days.push(start.plus({days:d}).toFormat('yyyy-MM-dd'));\nlet cost_before = null;\ntry { const c = $('Cost Before').first().json; cost_before = c.data ? c.data.usage : null; } catch(e) {}\nreturn [{json: {\n  run_id: $('Init Run').first().json.run_id,\n  started_at: $('Init Run').first().json.started_at,\n  batch_id: batch,\n  posts_per_batch: postsPerBatch,\n  brand, config, learnings,\n  past_topics: pastTopics,\n  days,\n  slots: cadence.slots || [],\n  formats: cadence.formats || {reel:1,carousel:1,image:5},\n  cost_before\n}}];"
+      }
+    },
+    {
+      "id": "agent_creative",
+      "name": "Creative Director",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1640,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "=BRAND CONSTITUTION (JSON):\n{{ JSON.stringify($json.brand) }}\n\nACTIVE LEARNINGS TO APPLY (from performance analysis of past batches; you MUST apply every directive):\n{{ JSON.stringify($json.learnings) }}\n\nTOPICS ALREADY USED (never repeat or closely paraphrase):\n{{ JSON.stringify($json.past_topics) }}\n\nBATCH NUMBER: {{ $json.batch_id }}\nNUMBER OF POSTS: {{ $json.posts_per_batch }}\nDATES (one post per date, in order): {{ JSON.stringify($json.days) }}\nAVAILABLE TIME SLOTS: {{ JSON.stringify($json.slots) }}\nFORMAT MIX REQUIRED: {{ JSON.stringify($json.formats) }}\n\nGenerate the batch now. Output ONLY the JSON object.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the Creative Director for Insta Bay, a Red Sea beach resort & spa in Hurghada, Egypt. The BRAND CONSTITUTION provided in the user message is law - never violate it.\n\nProduce exactly the requested number of Instagram posts matching the required format mix EXACTLY (e.g. 1 reel, 1 carousel, 5 single images).\n\nFor EVERY post produce:\n- post_id: 'b{batch}-p{n}' where batch is the batch number and n is 1..N in date order (e.g. 'b1-p3').\n- date: the assigned date (one per provided date, in order).\n- slot_time and slot_label: choose from the AVAILABLE TIME SLOTS. Deliberately VARY slots across the week - slot performance is being tested. If a learning directive names a slot, obey it for most posts while keeping at least one post in a different slot for comparison.\n- format: 'reel' | 'carousel' | 'image'.\n- pillar: a pillar name from the constitution, EXACTLY as written there. Respect the pillar mix percentages across the batch; if a learning redirects the mix, obey it while staying on-brand.\n- topic: short unique topic, not in the used-topics list.\n- caption_ar: WRITE THIS FIRST, natively in Egyptian Arabic following brand_voice_ar - exactly as a native Egyptian social media manager would write for Instagram: polished colloquial, warm, GCC-friendly, natural English loanwords (spa, sunset, check-in) where Egyptians actually use them. NEVER translate the English caption; write it as its own piece. First line must hook. 2-4 short lines with line breaks. End with the CTA per the constitution rules (DM / link in bio - never prices).\n- caption_en: an independent English caption following brand_voice_en (NOT a translation of the Arabic). Hook first line, sensory middle, CTA end. 80-300 characters preferred.\n- hashtags: array combining ALL hashtags_always PLUS 4-6 tags from the matching pillar's pool ONLY (total 7-11 tags). Never use a banned hashtag.\n- image_prompt: a photorealistic image-generation prompt matching visual_direction and color_palette (golden hour, turquoise water, candid distance shots). No text in image, no logos, no recognizable faces. For carousels, describe slide 1.\n- cta: the exact call-to-action phrase used.\n- rationale: one sentence - why this topic/format/pillar/slot; cite the learning directive that shaped it if any (e.g. 'applies directive: ...').\n\nFor the ONE reel post additionally produce:\n- reel_hook: the first-2-seconds spoken/visual hook.\n- reel_storyboard: 5-7 scenes as [{scene, shot, action, on_screen_text, seconds}] totaling 15-30 seconds.\n- reel_audio: an audio STYLE suggestion (e.g. 'calm tropical house build-up') - never name a specific copyrighted track.\n- reel_cover_text: 3-5 words for the cover.\n\nHARD RULES (never break): never invent specific facilities, prices, discounts, awards, room categories, restaurant names, or menu items beyond what the constitution guarantees (beach, turquoise water, snorkeling, diving, spa, relaxed-luxury resort). No fabricated reviews or guest quotes. Culturally respectful for conservative and international guests. Arabic is written natively, never translated.\n\nOutput ONLY JSON: {\"posts\": [ ... ]}. No commentary."
+        }
+      }
+    },
+    {
+      "id": "lm_gen2",
+      "name": "Gen Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        240
+      ],
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {
+          "temperature": 0.8,
+          "maxTokens": 16000
+        }
+      },
+      "credentials": {
+        "openRouterApi": {
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "parser_batch",
+      "name": "Batch Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1760,
+        240
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "autoFix": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"posts\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"post_id\": {\"type\": \"string\"},\n          \"date\": {\"type\": \"string\"},\n          \"slot_time\": {\"type\": \"string\"},\n          \"slot_label\": {\"type\": \"string\"},\n          \"format\": {\"type\": \"string\"},\n          \"pillar\": {\"type\": \"string\"},\n          \"topic\": {\"type\": \"string\"},\n          \"caption_ar\": {\"type\": \"string\"},\n          \"caption_en\": {\"type\": \"string\"},\n          \"hashtags\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n          \"image_prompt\": {\"type\": \"string\"},\n          \"reel_hook\": {\"type\": \"string\"},\n          \"reel_storyboard\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"scene\": {\"type\": \"number\"}, \"shot\": {\"type\": \"string\"}, \"action\": {\"type\": \"string\"}, \"on_screen_text\": {\"type\": \"string\"}, \"seconds\": {\"type\": \"number\"}}}},\n          \"reel_audio\": {\"type\": \"string\"},\n          \"reel_cover_text\": {\"type\": \"string\"},\n          \"cta\": {\"type\": \"string\"},\n          \"rationale\": {\"type\": \"string\"}\n        },\n        \"required\": [\"post_id\", \"date\", \"format\", \"pillar\", \"topic\", \"caption_ar\", \"caption_en\", \"hashtags\"]\n      }\n    }\n  },\n  \"required\": [\"posts\"]\n}"
+      }
+    },
+    {
+      "id": "agent_judge",
+      "name": "Brand Judge",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1900,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "=POSTS TO EVALUATE (JSON):\n{{ JSON.stringify($json.output.posts) }}\n\nBRAND CONSTITUTION:\n{{ JSON.stringify($('Build Creative Brief').item.json.brand) }}\n\nEvaluate every post now. Output ONLY the JSON object.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an independent, strict brand-quality judge for Instagram content. You are NOT the writer and you gain nothing from being kind; judge adversarially but fairly against the rubric. For EACH post, reason step by step about each criterion first, then commit to integer scores.\n\nRubric (integers 1-5):\n- brand_consistency: does the post obey the brand constitution - voice adjectives, pillar fit (pillar name must exist in the constitution), hashtag compliance (all always-on tags present, only pool tags added, no banned tags), CTA rules (DM / link in bio, no prices), no invented facilities/prices/offers? 5 = indistinguishable from a brand-book example; 4 = on-brand with minor nits; 3 = generic but inoffensive; 2 = noticeable violations; 1 = off-brand or invents facts.\n- arabic_naturalness: would a native Egyptian social media manager write this caption_ar for Instagram? Penalize translation calques of the English caption, stiff MSA/fusha register, unnatural word order, awkward loanword use. Reward idiomatic Egyptian colloquial warmth that remains comfortable for GCC readers. 5 = fully native and idiomatic; 3 = understandable but clearly shaped by English phrasing; 1 = reads like machine translation.\n- platform_fit: first-line hook strength, caption length (ideally 80-300 chars EN, hard max 2200), CTA present, format suitability (reel storyboard is 15-30s with a strong first-2-seconds hook and cover text of 3-5 words; carousel slide-1 concept leads), hashtag count 7-11.\n- pass: true ONLY if all three scores are >= 4.\n- revision_notes: if pass is false, give concrete, actionable fixes - quote the exact phrase or element to change and state the direction of the fix. Empty string if pass is true.\n\nOutput ONLY JSON: {\"evaluations\": [{\"post_id\": \"...\", \"brand_consistency\": 4, \"arabic_naturalness\": 4, \"platform_fit\": 4, \"pass\": true, \"revision_notes\": \"\"}]}. One evaluation per post, same post_id values."
+        }
+      }
+    },
+    {
+      "id": "lm_judge",
+      "name": "Judge Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        240
+      ],
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0,
+          "maxTokens": 8000
+        }
+      },
+      "credentials": {
+        "openRouterApi": {
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "parser_scores",
+      "name": "Scores Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2160,
+        240
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "autoFix": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"evaluations\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"post_id\": {\"type\": \"string\"},\n          \"brand_consistency\": {\"type\": \"number\"},\n          \"arabic_naturalness\": {\"type\": \"number\"},\n          \"platform_fit\": {\"type\": \"number\"},\n          \"pass\": {\"type\": \"boolean\"},\n          \"revision_notes\": {\"type\": \"string\"}\n        },\n        \"required\": [\"post_id\", \"brand_consistency\", \"arabic_naturalness\", \"platform_fit\", \"pass\"]\n      }\n    }\n  },\n  \"required\": [\"evaluations\"]\n}"
+      }
+    },
+    {
+      "id": "code_verdicts",
+      "name": "Apply Verdicts And Lint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const posts = $('Creative Director').first().json.output.posts;\nconst evals = $input.first().json.output.evaluations;\nconst brand = $('Build Creative Brief').first().json.brand;\nconst always = Array.isArray(brand.hashtags_always) ? brand.hashtags_always : [];\nconst banned = (Array.isArray(brand.hashtags_banned) ? brand.hashtags_banned : []).map(t=>String(t).toLowerCase());\nconst evalMap = Object.fromEntries(evals.map(e=>[e.post_id, e]));\nconst out = posts.map(p=>{\n  const e = evalMap[p.post_id] || {};\n  const tags = (p.hashtags||[]).map(String);\n  const lintIssues = [];\n  if (!(tags.length>=7 && tags.length<=11)) lintIssues.push('hashtag count '+tags.length);\n  for (const a of always) if (!tags.map(t=>t.toLowerCase()).includes(String(a).toLowerCase())) lintIssues.push('missing always tag '+a);\n  for (const t of tags) if (banned.includes(t.toLowerCase())) lintIssues.push('banned tag '+t);\n  if (!p.caption_ar || p.caption_ar.length<20) lintIssues.push('caption_ar too short');\n  if (!p.caption_en || p.caption_en.length<20) lintIssues.push('caption_en too short');\n  if ((p.caption_en||'').length>2200) lintIssues.push('caption_en too long');\n  if ((p.caption_ar||'').length>2200) lintIssues.push('caption_ar too long');\n  if (p.format==='reel' && (!p.reel_storyboard || !p.reel_storyboard.length)) lintIssues.push('reel missing storyboard');\n  const lint_pass = lintIssues.length===0;\n  const judged_pass = e.pass===true;\n  return {...p,\n    judge_brand_score: e.brand_consistency ?? '',\n    judge_arabic_score: e.arabic_naturalness ?? '',\n    judge_platform_score: e.platform_fit ?? '',\n    judge_notes: e.revision_notes || '',\n    lint_issues: lintIssues.join('; '),\n    lint_pass,\n    revision_count: 0,\n    needs_revision: !(judged_pass && lint_pass)\n  };\n});\nconst reels = out.filter(p=>p.format==='reel').length;\nconst batchIssues = [];\nif (reels!==1) batchIssues.push('expected exactly 1 reel, got '+reels);\nreturn [{json:{\n  posts: out,\n  any_revision: out.some(p=>p.needs_revision) || batchIssues.length>0,\n  batch_issues: batchIssues.join('; '),\n  pre_scores: out.map(p=>({post_id:p.post_id, brand:p.judge_brand_score, arabic:p.judge_arabic_score, platform:p.judge_platform_score}))\n}}];"
+      }
+    },
+    {
+      "id": "if_revision",
+      "name": "Needs Revision?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.any_revision }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_prep_rev",
+      "name": "Prep Revision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "let base;\ntry { base = $('Merge Final Batch').first().json; } catch(e) { base = null; }\nif (!base || !base.posts) base = $('Apply Verdicts And Lint').first().json;\nlet human_feedback = '';\ntry { human_feedback = String(($('Approval Gate').first().json || {})['Feedback'] || ''); } catch(e) {}\nreturn [{json:{\n  posts: base.posts,\n  batch_issues: base.batch_issues || '',\n  human_feedback,\n  brand: $('Build Creative Brief').first().json.brand,\n  batch_id: $('Build Creative Brief').first().json.batch_id\n}}];"
+      }
+    },
+    {
+      "id": "agent_reviser",
+      "name": "Reviser",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3000,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "=POSTS (each carries judge scores, judge_notes and lint_issues):\n{{ JSON.stringify($json.posts) }}\n\nBATCH-LEVEL ISSUES: {{ $json.batch_issues }}\n\nHUMAN FEEDBACK (outranks judge notes if they conflict; empty means none):\n{{ $json.human_feedback }}\n\nBRAND CONSTITUTION:\n{{ JSON.stringify($json.brand) }}\n\nRevise now. Return the FULL batch. Output ONLY the JSON object.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the Revision Editor for Insta Bay Instagram content. Apply the judge's revision_notes and fix every listed lint_issue for each post that has needs_revision=true, and apply the HUMAN FEEDBACK to the whole batch when present (human feedback outranks judge notes on any conflict). Fix batch-level issues too (e.g. wrong reel count - convert the most cinematic post to the required format).\n\nRules:\n- Posts that passed and are untouched by human feedback: return them VERBATIM, unchanged.\n- Keep post_id, date, slot_time, slot_label, format, pillar stable unless a note or the human feedback explicitly requires changing them.\n- caption_ar stays natively-written Egyptian Arabic (never a translation); improving it means making it MORE idiomatic, not more formal.\n- All brand hard rules still apply: no invented facilities/prices/offers/reviews; hashtags = all always-on + pool tags only, 7-11 total, no banned tags.\n- Return every post with ALL its fields (including reel fields for the reel).\n\nOutput ONLY JSON: {\"posts\": [ ... ]} in exactly the same schema as the input posts."
+        }
+      }
+    },
+    {
+      "id": "agent_rejudge",
+      "name": "Re-Judge",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3220,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "=POSTS TO EVALUATE (JSON):\n{{ JSON.stringify($json.output.posts) }}\n\nBRAND CONSTITUTION:\n{{ JSON.stringify($('Build Creative Brief').item.json.brand) }}\n\nEvaluate every post now. Output ONLY the JSON object.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an independent, strict brand-quality judge for Instagram content. You are NOT the writer and you gain nothing from being kind; judge adversarially but fairly against the rubric. For EACH post, reason step by step about each criterion first, then commit to integer scores.\n\nRubric (integers 1-5):\n- brand_consistency: does the post obey the brand constitution - voice adjectives, pillar fit (pillar name must exist in the constitution), hashtag compliance (all always-on tags present, only pool tags added, no banned tags), CTA rules (DM / link in bio, no prices), no invented facilities/prices/offers? 5 = indistinguishable from a brand-book example; 4 = on-brand with minor nits; 3 = generic but inoffensive; 2 = noticeable violations; 1 = off-brand or invents facts.\n- arabic_naturalness: would a native Egyptian social media manager write this caption_ar for Instagram? Penalize translation calques of the English caption, stiff MSA/fusha register, unnatural word order, awkward loanword use. Reward idiomatic Egyptian colloquial warmth that remains comfortable for GCC readers. 5 = fully native and idiomatic; 3 = understandable but clearly shaped by English phrasing; 1 = reads like machine translation.\n- platform_fit: first-line hook strength, caption length (ideally 80-300 chars EN, hard max 2200), CTA present, format suitability (reel storyboard is 15-30s with a strong first-2-seconds hook and cover text of 3-5 words; carousel slide-1 concept leads), hashtag count 7-11.\n- pass: true ONLY if all three scores are >= 4.\n- revision_notes: if pass is false, give concrete, actionable fixes - quote the exact phrase or element to change and state the direction of the fix. Empty string if pass is true.\n\nOutput ONLY JSON: {\"evaluations\": [{\"post_id\": \"...\", \"brand_consistency\": 4, \"arabic_naturalness\": 4, \"platform_fit\": 4, \"pass\": true, \"revision_notes\": \"\"}]}. One evaluation per post, same post_id values."
+        }
+      }
+    },
+    {
+      "id": "code_merge",
+      "name": "Merge Final Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "const revised = $('Reviser').first().json.output.posts;\nconst base = $('Prep Revision').first().json.posts;\nconst revMap = Object.fromEntries(revised.map(p=>[p.post_id,p]));\nconst posts = base.map(p => revMap[p.post_id] ? revMap[p.post_id] : p);\nconst evals = $input.first().json.output.evaluations;\nconst evalMap = Object.fromEntries(evals.map(e=>[e.post_id,e]));\nconst pre = Object.fromEntries((($('Apply Verdicts And Lint').first().json.pre_scores)||[]).map(s=>[s.post_id,s]));\nconst brand = $('Build Creative Brief').first().json.brand;\nconst always = Array.isArray(brand.hashtags_always) ? brand.hashtags_always : [];\nconst banned = (Array.isArray(brand.hashtags_banned) ? brand.hashtags_banned : []).map(t=>String(t).toLowerCase());\nconst out = posts.map(p=>{\n  const e = evalMap[p.post_id]||{};\n  const tags=(p.hashtags||[]).map(String);\n  const issues=[];\n  if(!(tags.length>=7&&tags.length<=11)) issues.push('hashtag count '+tags.length);\n  for(const a of always) if(!tags.map(t=>t.toLowerCase()).includes(String(a).toLowerCase())) issues.push('missing always tag '+a);\n  for(const t of tags) if(banned.includes(t.toLowerCase())) issues.push('banned tag '+t);\n  return {...p,\n    judge_brand_score: e.brand_consistency ?? p.judge_brand_score,\n    judge_arabic_score: e.arabic_naturalness ?? p.judge_arabic_score,\n    judge_platform_score: e.platform_fit ?? p.judge_platform_score,\n    judge_notes: e.revision_notes || '',\n    judge_brand_score_pre: (pre[p.post_id]||{}).brand ?? '',\n    judge_arabic_score_pre: (pre[p.post_id]||{}).arabic ?? '',\n    lint_issues: issues.join('; '),\n    lint_pass: issues.length===0,\n    revision_count: (parseInt(p.revision_count,10)||0)+1\n  };\n});\nreturn [{json:{posts: out, revised: true}}];"
+      }
+    },
+    {
+      "id": "code_finalize",
+      "name": "Finalize Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const inp = $input.first().json;\nconst posts = inp.posts;\nconst briefJ = $('Build Creative Brief').first().json;\nconst batch = briefJ.batch_id;\nfunction fnv(str){let h=0x811c9dc5;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h;}\nconst rows = posts.map(p=>{\n  const seed = fnv(String(p.post_id)) % 100000;\n  const promptTxt = encodeURIComponent(String(p.image_prompt||'').slice(0,300));\n  const image_url = 'https://image.pollinations.ai/prompt/' + promptTxt + '?width=1080&height=1350&seed=' + seed + '&nologo=true';\n  const publish_at = DateTime.fromISO(p.date + 'T' + (p.slot_time||'20:00') + ':00', {zone:'Africa/Cairo'}).toISO();\n  return { json: {\n    post_id: p.post_id, batch_id: String(batch),\n    publish_at, slot_label: p.slot_label||'', format: p.format, pillar: p.pillar, topic: p.topic,\n    caption_en: p.caption_en, caption_ar: p.caption_ar,\n    hashtags: (p.hashtags||[]).join(' '),\n    image_prompt: p.image_prompt||'', image_url,\n    reel_hook: p.reel_hook||'', reel_storyboard: p.reel_storyboard?JSON.stringify(p.reel_storyboard):'',\n    reel_audio: p.reel_audio||'', reel_cover_text: p.reel_cover_text||'',\n    cta: p.cta||'', rationale: p.rationale||'',\n    status: 'pending',\n    judge_brand_score: String(p.judge_brand_score??''), judge_arabic_score: String(p.judge_arabic_score??''), judge_platform_score: String(p.judge_platform_score??''),\n    judge_notes: p.judge_notes||'',\n    judge_brand_score_pre: String((p.judge_brand_score_pre??p.judge_brand_score)??''),\n    judge_arabic_score_pre: String((p.judge_arabic_score_pre??p.judge_arabic_score)??''),\n    lint_pass: String(p.lint_pass!==false), revision_count: String(p.revision_count||0),\n    approved_at:'', published_at:'', media_id:'', api_payload_log:'',\n    created_at: new Date().toISOString()\n  }};\n});\nreturn rows;"
+      }
+    },
+    {
+      "id": "sh_upsert_cal",
+      "name": "Upsert Calendar",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3880,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calendar"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "post_id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_email",
+      "name": "Format Approval Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i=>i.json);\nconst batch = rows.length ? rows[0].batch_id : '?';\nconst esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');\nconst approval_url = $execution.resumeFormUrl;\nlet html = '<h2>InstaBay content batch ' + batch + ' - approval needed</h2>';\nhtml += '<p><a href=\"' + approval_url + '\"><b>Open the approval form</b></a> to approve all or request changes.</p>';\nhtml += '<p>' + rows.length + ' posts:</p>';\nfor (const r of rows){\n  html += '<hr><h3>' + esc(r.post_id) + ' | ' + esc(r.format) + ' | ' + esc(r.pillar) + ' | ' + esc(r.publish_at) + '</h3>'\n  + '<p><b>Topic:</b> ' + esc(r.topic) + '</p>'\n  + '<p><b>EN:</b> ' + esc(r.caption_en).replace(/\\n/g,'<br>') + '</p>'\n  + '<p dir=\"rtl\" style=\"text-align:right\"><b>AR:</b> ' + esc(r.caption_ar).replace(/\\n/g,'<br>') + '</p>'\n  + '<p><b>Hashtags:</b> ' + esc(r.hashtags) + '</p>'\n  + '<p><b>Judge:</b> brand ' + r.judge_brand_score + '/5, arabic ' + r.judge_arabic_score + '/5, platform ' + r.judge_platform_score + '/5 | lint ' + r.lint_pass + '</p>'\n  + (r.format==='reel' ? '<p><b>Reel hook:</b> ' + esc(r.reel_hook) + '<br><b>Storyboard:</b> ' + esc(r.reel_storyboard) + '</p>' : '')\n  + '<p><a href=\"' + r.image_url + '\">visual preview</a></p>';\n}\nhtml += '<hr><p>Sheet: https://docs.google.com/spreadsheets/d/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/edit</p>';\nreturn [{json:{subject: 'InstaBay batch ' + batch + ': approve ' + rows.length + ' posts', html, batch_id: batch, posts_count: rows.length, approval_url}}];"
+      }
+    },
+    {
+      "id": "switch_approval",
+      "name": "Approval?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        4540,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Approve",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "s1",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Approve all",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "Changes",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "s2",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Request changes",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_mark_approved",
+      "name": "Mark Approved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4760,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "const rows = $('Upsert Calendar').all().map(i=>i.json);\nconst now = new Date().toISOString();\nreturn rows.map(r=>({json:{post_id: r.post_id, status:'approved', approved_at: now}}));"
+      }
+    },
+    {
+      "id": "sh_update_approved",
+      "name": "Update Approved",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4980,
+        -120
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calendar"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "post_id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "http_cost_after",
+      "name": "Cost After",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        5200,
+        -120
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "parameters": {
+        "method": "GET",
+        "url": "https://openrouter.ai/api/v1/auth/key",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "code_runstats2",
+      "name": "Run Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5420,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "const brief = $('Build Creative Brief').first().json;\nconst started = brief.started_at;\nconst finished = new Date().toISOString();\nconst duration_s = Math.round((new Date(finished).getTime()-new Date(started).getTime())/1000);\nlet cost = '';\ntry {\n  const before = brief.cost_before;\n  const afterJ = $('Cost After').first().json;\n  const after = afterJ.data ? afterJ.data.usage : null;\n  if (before!=null && after!=null) cost = String(Math.round((after-before)*10000)/10000);\n} catch(e){}\nconst posts_count = $('Mark Approved').all().length;\nconst cpp = (cost && posts_count) ? String(Math.round(parseFloat(cost)/posts_count*10000)/10000) : '';\nreturn [{json:{\n  run_id: brief.run_id, workflow:'WF2-content-studio', batch_id: String(brief.batch_id),\n  started_at: started, finished_at: finished, duration_s: String(duration_s),\n  llm_cost_usd: cost, posts_count: String(posts_count),\n  cost_per_post_usd: cpp,\n  notes: 'batch generated, judged, approved'\n}}];"
+      }
+    },
+    {
+      "id": "sh_runlog2",
+      "name": "Log Run",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        5640,
+        -120
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RunLog"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_bump",
+      "name": "Bump Batch Counter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5860,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Read Config').all().map(i=>i.json);\nconst row = cfg.find(r=>r.key==='batch_counter');\nif (!row) throw new Error('batch_counter row not found in Config');\nconst next = String(parseInt(row.value,10)+1);\nreturn [{json:{row_number: row.row_number, key:'batch_counter', value: next}}];"
+      }
+    },
+    {
+      "id": "sh_bump",
+      "name": "Write Batch Counter",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        6080,
+        -120
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_guard",
+      "name": "Guard Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "const out = $input.first().json.output;\nif (!out || !Array.isArray(out.posts)) throw new Error('Creative output missing posts array - likely truncated or malformed generation');\nconst brief = $('Build Creative Brief').first().json;\nif (out.posts.length !== brief.posts_per_batch) throw new Error('Creative output has ' + out.posts.length + ' posts, expected ' + brief.posts_per_batch + ' - likely truncated generation or autofix hallucination');\nconst re = new RegExp('^b' + brief.batch_id + '-p\\\\d+$');\nconst bad = out.posts.filter(p => !re.test(String(p.post_id)));\nif (bad.length) throw new Error('post_id pattern violation: ' + bad.map(p=>p.post_id).join(', '));\nreturn [{json: {output: out}}];"
+      }
+    },
+    {
+      "id": "code_appr_row",
+      "name": "Approval Link Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4260,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst brief = $('Build Creative Brief').first().json;\nreturn [{json:{\n  run_id: brief.run_id, workflow: 'WF2-approval-link', batch_id: String(brief.batch_id),\n  started_at: brief.started_at, finished_at: '', duration_s: '',\n  llm_cost_usd: '', posts_count: String(j.posts_count), cost_per_post_usd: '',\n  notes: j.approval_url\n}}];"
+      }
+    },
+    {
+      "id": "sh_appr_log",
+      "name": "Log Approval Link",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RunLog"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "id": "gmail_notify",
+      "name": "Notify Approval",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4540,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Build Creative Brief').item.json.config.approver_email }}",
+        "subject": "={{ $('Format Approval Email').item.json.subject }}",
+        "emailType": "html",
+        "message": "={{ $('Format Approval Email').item.json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "webhookId": "b7a8218e-ee82-41b8-8a31-8d0824c5affc"
+    },
+    {
+      "id": "wait_approval",
+      "name": "Approval Gate",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4680,
+        0
+      ],
+      "parameters": {
+        "resume": "form",
+        "formTitle": "InstaBay - Batch Approval",
+        "formDescription": "Review the batch below, pick a decision, and submit. 'Request changes' + feedback sends the batch back to the Reviser.",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "html",
+              "html": "={{ $('Format Approval Email').item.json.html }}"
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Decision",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve all"
+                  },
+                  {
+                    "option": "Request changes"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Feedback"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "webhookId": "b23b2854-d0d4-4122-8825-0fdbb9e7a8f6"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Run": {
+      "main": [
+        [
+          {
+            "node": "Cost Before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cost Before": {
+      "main": [
+        [
+          {
+            "node": "Read Brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Brand": {
+      "main": [
+        [
+          {
+            "node": "Read Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Config": {
+      "main": [
+        [
+          {
+            "node": "Read Learnings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Learnings": {
+      "main": [
+        [
+          {
+            "node": "Read Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Calendar": {
+      "main": [
+        [
+          {
+            "node": "Build Creative Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Creative Brief": {
+      "main": [
+        [
+          {
+            "node": "Creative Director",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand Judge": {
+      "main": [
+        [
+          {
+            "node": "Apply Verdicts And Lint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Verdicts And Lint": {
+      "main": [
+        [
+          {
+            "node": "Needs Revision?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Revision?": {
+      "main": [
+        [
+          {
+            "node": "Prep Revision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Revision": {
+      "main": [
+        [
+          {
+            "node": "Reviser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviser": {
+      "main": [
+        [
+          {
+            "node": "Re-Judge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-Judge": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Final Batch": {
+      "main": [
+        [
+          {
+            "node": "Finalize Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Batch": {
+      "main": [
+        [
+          {
+            "node": "Upsert Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Calendar": {
+      "main": [
+        [
+          {
+            "node": "Format Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval?": {
+      "main": [
+        [
+          {
+            "node": "Mark Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Revision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Approved": {
+      "main": [
+        [
+          {
+            "node": "Update Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Approved": {
+      "main": [
+        [
+          {
+            "node": "Cost After",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cost After": {
+      "main": [
+        [
+          {
+            "node": "Run Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Stats": {
+      "main": [
+        [
+          {
+            "node": "Log Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Run": {
+      "main": [
+        [
+          {
+            "node": "Bump Batch Counter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bump Batch Counter": {
+      "main": [
+        [
+          {
+            "node": "Write Batch Counter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gen Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Creative Director",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Reviser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Batch Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Judge Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Brand Judge",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Re-Judge",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Scores Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Creative Director",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Reviser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scores Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Brand Judge",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Re-Judge",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creative Director": {
+      "main": [
+        [
+          {
+            "node": "Guard Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guard Batch": {
+      "main": [
+        [
+          {
+            "node": "Brand Judge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Approval Link Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Link Row": {
+      "main": [
+        [
+          {
+            "node": "Log Approval Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Approval Link": {
+      "main": [
+        [
+          {
+            "node": "Notify Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Approval": {
+      "main": [
+        [
+          {
+            "node": "Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "Approval?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

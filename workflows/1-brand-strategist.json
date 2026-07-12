@@ -1,0 +1,368 @@
+{
+  "name": "InstaBay - 1 Brand Strategist",
+  "nodes": [
+    {
+      "id": "wh_brand",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-brand",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "e91e0cd2-8fb2-4120-bce0-9cde42795430"
+    },
+    {
+      "id": "set_brief",
+      "name": "Brief",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "client_brief",
+              "type": "string",
+              "value": "Insta Bay is a beach resort & spa on the Red Sea in Hurghada, Egypt. Turquoise water, snorkeling and diving, relaxed-luxury vibes, and a promise that every moment is worth posting. Guests are a mix of Egyptian domestic travelers, GCC visitors, and European tourists. Insta Bay wants to grow its Instagram presence but has no real social strategy, posts inconsistently, and has no idea what actually drives engagement."
+            },
+            {
+              "id": "b2",
+              "name": "run_id",
+              "type": "string",
+              "value": "={{ 'wf1-' + $execution.id }}"
+            },
+            {
+              "id": "b3",
+              "name": "started_at",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "agent_strategist",
+      "name": "Brand Strategist",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        400,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "=Client brief:\n{{ $json.client_brief }}\n\nToday is {{ $now.toFormat('yyyy-MM-dd') }}. Produce the complete brand constitution JSON now.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the Brand Strategist for Insta Bay, a beach resort & spa on the Red Sea in Hurghada, Egypt. You are a senior hospitality brand strategist and Instagram marketing director.\n\nYour job: expand the thin client brief into a complete, opinionated INSTAGRAM BRAND CONSTITUTION that every future post must obey. This constitution is the single source of truth for a content-generation pipeline; it must be specific enough that a copywriter (human or AI) can write on-brand captions without asking questions.\n\nRequirements:\n1. AUDIENCES - exactly these three segments, each with a sharp insight and what they want from a resort Instagram: (a) Egyptian domestic travelers (weekend escapes, value, pride in the Red Sea), (b) GCC visitors (family comfort, privacy, premium service), (c) European tourists (winter sun, diving, authentic experiences).\n2. VOICE - define brand_voice_en (English: relaxed-premium, sensory, warm, confident - describe it in 2-3 sentences with 2-3 example phrases) and brand_voice_ar (Egyptian Arabic: warm, hospitable, polished colloquial that GCC readers also understand comfortably; natural English loanwords like spa, check-in, sunset are fine). The Arabic voice is NOT a translation of the English one - define it natively, including 2-3 example phrases written in Arabic script.\n3. CONTENT PILLARS - 4 or 5 pillars. Each: name (short, stable identifier-like, e.g. 'Visual Escape'), one-sentence description, primary audience, mix_percent (integers, must sum to 100). Cover at minimum: the visual beauty of the place, experiences (diving/snorkeling/spa), and a conversion pillar (booking-oriented).\n4. HASHTAGS - three tiers: hashtags_always (3-5 tags that go on every post: brand + geo, e.g. #InstaBay #Hurghada), hashtag_pools (an ARRAY of objects {pillar, tags}, one entry per pillar, where 'pillar' matches the pillar name EXACTLY and 'tags' holds 5-8 hashtags), hashtags_banned (generic engagement-bait tags to never use, e.g. #follow4follow).\n5. CADENCE - posting_cadence with posts_per_week: 7, formats: {reel: 1, carousel: 1, image: 5}, and slots: 3-4 day-agnostic time slots, each {time: 'HH:mm' 24h Cairo time, label: short-kebab-label, why: one line}. Slots should span late morning to late evening so performance differences can be learned.\n6. VISUAL DIRECTION - photography style, light, composition, people vs place balance, in 3-4 sentences; color_palette as 4-6 hex codes drawn from turquoise water / sand / sunset.\n7. LANGUAGE RULES - every post carries BOTH an Arabic and an English caption; Arabic is written natively (never translated from English); state which audiences each language serves.\n8. DOS AND DONTS - include these HARD RULES among the donts: never invent specific facilities, prices, discounts, awards, room categories, or menu items beyond what the brief guarantees (beach, turquoise water, snorkeling, diving, spa, relaxed-luxury resort); never over-promise or fabricate reviews; stay culturally respectful for conservative and international guests alike; CTAs use 'DM us' or 'link in bio', never invented prices or percent-off claims.\n9. one_pager_md - a complete one-page brand identity document in markdown: title, positioning statement, the three audiences, voice in both languages, pillars with mix, hashtag system, weekly cadence, visual direction, and the hard rules. It ships to the client as-is, so make it polished.\n\nOutput ONLY the JSON object matching the required schema. No commentary before or after."
+        }
+      }
+    },
+    {
+      "id": "lm_gen",
+      "name": "Gen Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        340,
+        220
+      ],
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "parser_brand",
+      "name": "Brand Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        540,
+        220
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"brand_name\": {\"type\": \"string\"},\n    \"tagline\": {\"type\": \"string\"},\n    \"brand_voice_en\": {\"type\": \"string\"},\n    \"brand_voice_ar\": {\"type\": \"string\"},\n    \"tone_adjectives\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"audience_notes\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"segment\": {\"type\": \"string\"}, \"insight\": {\"type\": \"string\"}, \"wants\": {\"type\": \"string\"}}}},\n    \"visual_direction\": {\"type\": \"string\"},\n    \"color_palette\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"content_pillars\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"name\": {\"type\": \"string\"}, \"description\": {\"type\": \"string\"}, \"audience\": {\"type\": \"string\"}, \"mix_percent\": {\"type\": \"number\"}}}},\n    \"hashtags_always\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"hashtag_pools\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"pillar\": {\"type\": \"string\"}, \"tags\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}},\n    \"hashtags_banned\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"posting_cadence\": {\"type\": \"object\", \"properties\": {\"posts_per_week\": {\"type\": \"number\"}, \"formats\": {\"type\": \"object\", \"properties\": {\"reel\": {\"type\": \"number\"}, \"carousel\": {\"type\": \"number\"}, \"image\": {\"type\": \"number\"}}}, \"slots\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"time\": {\"type\": \"string\"}, \"label\": {\"type\": \"string\"}, \"why\": {\"type\": \"string\"}}}}}},\n    \"language_rules\": {\"type\": \"string\"},\n    \"dos_donts\": {\"type\": \"object\", \"properties\": {\"do\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"dont\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}},\n    \"one_pager_md\": {\"type\": \"string\"}\n  },\n  \"required\": [\"brand_name\", \"brand_voice_en\", \"brand_voice_ar\", \"content_pillars\", \"hashtags_always\", \"hashtag_pools\", \"posting_cadence\", \"one_pager_md\"]\n}",
+        "autoFix": true
+      }
+    },
+    {
+      "id": "code_flatten",
+      "name": "Flatten Brand",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const out = $input.first().json.output;\nconst s = (v) => (typeof v === 'string' ? v : JSON.stringify(v));\nreturn [{ json: {\n  created_at: new Date().toISOString(),\n  brand_name: out.brand_name || 'Insta Bay Resort & Spa',\n  tagline: s(out.tagline || ''),\n  brand_voice_en: s(out.brand_voice_en || ''),\n  brand_voice_ar: s(out.brand_voice_ar || ''),\n  tone_adjectives: s(out.tone_adjectives || []),\n  audience_notes: s(out.audience_notes || []),\n  visual_direction: s(out.visual_direction || ''),\n  color_palette: s(out.color_palette || []),\n  content_pillars: s(out.content_pillars || []),\n  hashtags_always: s(out.hashtags_always || []),\n  hashtag_pools: s(out.hashtag_pools || {}),\n  hashtags_banned: s(out.hashtags_banned || []),\n  posting_cadence: s(out.posting_cadence || {}),\n  language_rules: s(out.language_rules || ''),\n  dos_donts: s(out.dos_donts || {}),\n  one_pager_md: s(out.one_pager_md || ''),\n  version: 'v1'\n}}];"
+      }
+    },
+    {
+      "id": "sheets_brand",
+      "name": "Write Brand",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        840,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Brand"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_runstats",
+      "name": "Run Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const started = $('Brief').first().json.started_at;\nconst finished = new Date().toISOString();\nconst duration_s = Math.round((new Date(finished).getTime() - new Date(started).getTime()) / 1000);\nreturn [{ json: {\n  run_id: $('Brief').first().json.run_id,\n  workflow: 'WF1-brand-strategist',\n  batch_id: '',\n  started_at: started,\n  finished_at: finished,\n  duration_s: String(duration_s),\n  llm_cost_usd: '',\n  posts_count: '',\n  cost_per_post_usd: '',\n  notes: 'brand constitution v1 generated'\n}}];"
+      }
+    },
+    {
+      "id": "sheets_runlog",
+      "name": "Log Run",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1280,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RunLog"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "set_result",
+      "name": "Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "status",
+              "type": "string",
+              "value": "brand constitution written"
+            },
+            {
+              "id": "r2",
+              "name": "brand_name",
+              "type": "string",
+              "value": "={{ $('Flatten Brand').item.json.brand_name }}"
+            },
+            {
+              "id": "r3",
+              "name": "run_id",
+              "type": "string",
+              "value": "={{ $('Brief').item.json.run_id }}"
+            },
+            {
+              "id": "r4",
+              "name": "sheet",
+              "type": "string",
+              "value": "https://docs.google.com/spreadsheets/d/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/edit"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief": {
+      "main": [
+        [
+          {
+            "node": "Brand Strategist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gen Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Brand Strategist",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Brand Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Brand Strategist",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand Strategist": {
+      "main": [
+        [
+          {
+            "node": "Flatten Brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Brand": {
+      "main": [
+        [
+          {
+            "node": "Write Brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Brand": {
+      "main": [
+        [
+          {
+            "node": "Run Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Stats": {
+      "main": [
+        [
+          {
+            "node": "Log Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Run": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

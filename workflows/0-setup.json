@@ -1,0 +1,152 @@
+{
+  "name": "InstaBay - 0 Setup",
+  "nodes": [
+    {
+      "id": "wh_setup",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-setup",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "63848aad-5c86-43ec-8555-6de4a76f8614"
+    },
+    {
+      "id": "http_create_ss",
+      "name": "Create Spreadsheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"properties\":{\"title\":\"InstaBay Command Center\"},\"sheets\":[{\"properties\":{\"title\":\"Brand\"}},{\"properties\":{\"title\":\"Config\"}},{\"properties\":{\"title\":\"Calendar\"}},{\"properties\":{\"title\":\"Metrics\"}},{\"properties\":{\"title\":\"Learnings\"}},{\"properties\":{\"title\":\"RunLog\"}},{\"properties\":{\"title\":\"Benchmarks\"}}]}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "http_headers",
+      "name": "Write Headers And Seeds",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheetId }}/values:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"valueInputOption\":\"RAW\",\"data\":[{\"range\":\"Brand!A1\",\"values\":[[\"created_at\",\"brand_name\",\"tagline\",\"brand_voice_en\",\"brand_voice_ar\",\"tone_adjectives\",\"audience_notes\",\"visual_direction\",\"color_palette\",\"content_pillars\",\"hashtags_always\",\"hashtag_pools\",\"hashtags_banned\",\"posting_cadence\",\"language_rules\",\"dos_donts\",\"one_pager_md\",\"version\"]]},{\"range\":\"Config!A1\",\"values\":[[\"key\",\"value\"],[\"publish_mode\",\"dry_run\"],[\"batch_counter\",\"1\"],[\"posts_per_batch\",\"7\"],[\"follower_base\",\"12000\"],[\"approver_email\",\"mosharkawyy@gmail.com\"],[\"ig_user_id\",\"DEMO_IG_USER_ID\"],[\"graph_api_version\",\"v25.0\"]]},{\"range\":\"Calendar!A1\",\"values\":[[\"post_id\",\"batch_id\",\"publish_at\",\"slot_label\",\"format\",\"pillar\",\"topic\",\"caption_en\",\"caption_ar\",\"hashtags\",\"image_prompt\",\"image_url\",\"reel_hook\",\"reel_storyboard\",\"reel_audio\",\"reel_cover_text\",\"cta\",\"rationale\",\"status\",\"judge_brand_score\",\"judge_arabic_score\",\"judge_platform_score\",\"judge_notes\",\"judge_brand_score_pre\",\"judge_arabic_score_pre\",\"lint_pass\",\"revision_count\",\"approved_at\",\"published_at\",\"media_id\",\"api_payload_log\",\"created_at\"]]},{\"range\":\"Metrics!A1\",\"values\":[[\"post_id\",\"batch_id\",\"format\",\"pillar\",\"slot_label\",\"source\",\"reach\",\"likes\",\"comments\",\"saves\",\"shares\",\"video_views\",\"watch_through_rate\",\"engagement_total\",\"er\",\"measured_at\"]]},{\"range\":\"Learnings!A1\",\"values\":[[\"learning_id\",\"batch_id\",\"created_at\",\"insight_type\",\"dimension\",\"directive\",\"evidence\",\"applied_in_batch\"]]},{\"range\":\"RunLog!A1\",\"values\":[[\"run_id\",\"workflow\",\"batch_id\",\"started_at\",\"finished_at\",\"duration_s\",\"llm_cost_usd\",\"posts_count\",\"cost_per_post_usd\",\"notes\"]]},{\"range\":\"Benchmarks!A1\",\"values\":[[\"benchmark_id\",\"metric\",\"value\",\"unit\",\"batch_id\",\"method\",\"computed_at\"]]}]}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "set_result",
+      "name": "Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "spreadsheetId",
+              "type": "string",
+              "value": "={{ $('Create Spreadsheet').item.json.spreadsheetId }}"
+            },
+            {
+              "id": "a2",
+              "name": "spreadsheetUrl",
+              "type": "string",
+              "value": "={{ $('Create Spreadsheet').item.json.spreadsheetUrl }}"
+            },
+            {
+              "id": "a3",
+              "name": "tabsWritten",
+              "type": "string",
+              "value": "={{ $json.totalUpdatedSheets }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Write Headers And Seeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Headers And Seeds": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

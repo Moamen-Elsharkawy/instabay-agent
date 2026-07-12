@@ -1,0 +1,797 @@
+{
+  "name": "InstaBay - 4 Analyst",
+  "nodes": [
+    {
+      "id": "sched4",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        -120
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wh4",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        80
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-analyze",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "c8d1e06a-802c-4c5c-9518-50d82466a28e"
+    },
+    {
+      "id": "code_init4",
+      "name": "Init Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: {\n  run_id: 'wf4-' + $execution.id,\n  started_at: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "sh4_config",
+      "name": "Read Config",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        400,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "sh4_cal",
+      "name": "Read Calendar",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        600,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calendar"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_selpub",
+      "name": "Select Published",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const cfgRows = $('Read Config').all().map(i=>i.json).filter(r=>r.key);\nconst config = Object.fromEntries(cfgRows.map(r=>[r.key,String(r.value)]));\nconst rows = $('Read Calendar').all().map(i=>i.json).filter(r=>r.post_id && r.status==='published' && String(r.post_id).match(/^b\\d+-p\\d+$/));\nif (!rows.length) throw new Error('No published posts to analyze yet - run WF3 first');\nreturn rows.map(r=>({json:{...r,\n  follower_base: config.follower_base||'12000',\n  publish_mode: config.publish_mode||'dry_run',\n  graph_api_version: config.graph_api_version||'v25.0',\n  ig_access_token: config.ig_access_token||''\n}}));"
+      }
+    },
+    {
+      "id": "switch_mode4",
+      "name": "Mode?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "DryRun",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "w1",
+                    "leftValue": "={{ $json.publish_mode }}",
+                    "rightValue": "dry_run",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "Live",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "w2",
+                    "leftValue": "={{ $json.publish_mode }}",
+                    "rightValue": "live",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_sim4",
+      "name": "Engagement Simulator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        -140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r = $json;\nfunction fnv(str){let h=0x811c9dc5;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h;}\nfunction mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}\nconst rng = mulberry32(fnv(String(r.post_id)));\nfunction gauss(){ const u1 = Math.max(rng(), 1e-9), u2 = rng(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }\nconst followers = parseInt(r.follower_base||'12000',10);\nconst fmt = String(r.format||'image').toLowerCase();\nconst formatReach = fmt==='reel'?0.45:(fmt==='carousel'?0.24:0.20);\nlet hour = 20;\ntry { hour = DateTime.fromISO(String(r.publish_at)).setZone('Africa/Cairo').hour; } catch(e) {}\nconst slotMult = hour>=21?1.25:(hour>=19?1.15:(hour>=15?1.0:0.9));\nconst p = String(r.pillar||'').toLowerCase();\nconst pillarAff = /book|offer|deal|promo|bliss/.test(p)?1.20:(/visual|escape|beauty|paradise/.test(p)?1.15:(/spa|wellness|seren|sanctuary/.test(p)?1.00:(/local|culture|charm/.test(p)?0.95:(/tip|guide|how/.test(p)?0.90:1.0))));\nconst capLen = String(r.caption_en||'').length;\nlet capMult = 1.0;\nif (capLen>=80 && capLen<=300) capMult *= 1.05;\nif (capLen>2200) capMult *= 0.95;\nif (r.caption_ar && r.caption_en) capMult *= 1.05;\nconst noiseReach = 1 + 0.12*gauss();\nconst noiseEng = 1 + 0.12*gauss();\nconst reach = Math.max(200, Math.round(followers * formatReach * slotMult * pillarAff * noiseReach));\nconst erBase = fmt==='reel'?0.027:(fmt==='carousel'?0.014:0.013);\nconst engagement = Math.max(1, Math.round(reach * erBase * capMult * noiseEng));\nconst likes = Math.round(engagement*0.78);\nconst saves = Math.round(engagement*0.10);\nconst comments = Math.round(engagement*0.07);\nconst shares = Math.max(0, engagement - likes - saves - comments);\nconst video_views = fmt==='reel' ? Math.round(reach*1.1) : 0;\nconst wtr = fmt==='reel' ? Math.min(0.7, Math.max(0.1, 0.35 + 0.1*gauss())) : 0;\nreturn {json:{\n  post_id: r.post_id, batch_id: String(r.batch_id), format: fmt, pillar: r.pillar, slot_label: r.slot_label || (String(hour)+':00'),\n  source: 'synthetic',\n  reach: String(reach), likes: String(likes), comments: String(comments), saves: String(saves), shares: String(shares),\n  video_views: String(video_views), watch_through_rate: fmt==='reel'?wtr.toFixed(3):'',\n  engagement_total: String(engagement), er: (engagement/reach).toFixed(5),\n  measured_at: 'sim-v1-deterministic'\n}};"
+      }
+    },
+    {
+      "id": "http_insights",
+      "name": "Get Insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1220,
+        140
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/{{ $json.graph_api_version }}/{{ $json.media_id }}/insights?metric=reach,likes,comments,saved,shares,views&access_token={{ $json.ig_access_token }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "code_norm4",
+      "name": "Normalize Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp = $json;\nconst orig = $('Mode?').item.json;\nconst get = name => { const m = (resp.data||[]).find(d=>d.name===name); return m && m.values && m.values[0] ? Number(m.values[0].value)||0 : 0; };\nconst reach = get('reach'), likes = get('likes'), comments = get('comments'), saves = get('saved'), shares = get('shares'), views = get('views');\nconst engagement = likes+comments+saves+shares;\nlet hour = 20; try { hour = DateTime.fromISO(String(orig.publish_at)).setZone('Africa/Cairo').hour; } catch(e) {}\nreturn {json:{\n  post_id: orig.post_id, batch_id: String(orig.batch_id), format: String(orig.format||'').toLowerCase(), pillar: orig.pillar, slot_label: orig.slot_label || (String(hour)+':00'),\n  source: 'live',\n  reach: String(reach), likes: String(likes), comments: String(comments), saves: String(saves), shares: String(shares),\n  video_views: String(views), watch_through_rate: '',\n  engagement_total: String(engagement), er: reach>0?(engagement/reach).toFixed(5):'0',\n  measured_at: new Date().toISOString()\n}};"
+      }
+    },
+    {
+      "id": "sh4_metrics",
+      "name": "Upsert Metrics",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1640,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Metrics"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "post_id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_agg",
+      "name": "Aggregate Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const metrics = $input.all().map(i=>i.json);\nconst byBatch = {};\nfor (const m of metrics){ (byBatch[m.batch_id] = byBatch[m.batch_id]||[]).push(m); }\nconst mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;\nconst agg = {};\nfor (const [b, arr] of Object.entries(byBatch)){\n  const groupBy = key => { const o={}; for (const m of arr){ const k=m[key]||'?'; (o[k]=o[k]||[]).push(parseFloat(m.er)); } return Object.fromEntries(Object.entries(o).map(([k,v])=>[k, +(mean(v).toFixed(5))])); };\n  const groupEng = key => { const o={}; for (const m of arr){ const k=m[key]||'?'; (o[k]=o[k]||[]).push(parseFloat(m.engagement_total)); } return Object.fromEntries(Object.entries(o).map(([k,v])=>[k, +(mean(v).toFixed(1))])); };\n  agg[b] = {\n    posts: arr.length,\n    mean_er: +(mean(arr.map(m=>parseFloat(m.er))).toFixed(5)),\n    mean_reach: Math.round(mean(arr.map(m=>parseFloat(m.reach)))),\n    mean_engagement: +(mean(arr.map(m=>parseFloat(m.engagement_total))).toFixed(1)),\n    er_by_format: groupBy('format'),\n    er_by_pillar: groupBy('pillar'),\n    er_by_slot: groupBy('slot_label'),\n    engagement_by_format: groupEng('format'),\n    engagement_by_pillar: groupEng('pillar'),\n    engagement_by_slot: groupEng('slot_label'),\n    posts_detail: arr.map(m=>({id:m.post_id, format:m.format, pillar:m.pillar, slot:m.slot_label, reach:+m.reach, engagement:+m.engagement_total, er:+m.er})),\n    top: arr.slice().sort((x,y)=>parseFloat(y.er)-parseFloat(x.er)).slice(0,2).map(m=>({post_id:m.post_id, er:m.er, format:m.format, pillar:m.pillar, slot:m.slot_label})),\n    bottom: arr.slice().sort((x,y)=>parseFloat(x.er)-parseFloat(y.er)).slice(0,2).map(m=>({post_id:m.post_id, er:m.er, format:m.format, pillar:m.pillar, slot:m.slot_label}))\n  };\n}\nconst batches = Object.keys(agg).map(Number).sort((x,y)=>x-y);\nconst latest = batches[batches.length-1];\nreturn [{json:{ agg, batches, latest_batch: latest, next_batch: latest+1, metrics_count: metrics.length }}];"
+      }
+    },
+    {
+      "id": "agent_analyst",
+      "name": "Performance Analyst",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2080,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "=PER-BATCH ENGAGEMENT AGGREGATES (simulated engagement data for this exercise):\n{{ JSON.stringify($json.agg) }}\n\nLATEST BATCH: {{ $json.latest_batch }}. Your directives will steer batch {{ $json.next_batch }}.\n\nAnalyze and produce the learnings now. Output ONLY the JSON object.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the Performance Analyst for Insta Bay's Instagram system. You write the verbal performance memory that steers the next content batch (Reflexion-style episodic memory).\n\nYou receive per-batch aggregates AND per-post detail rows (format, pillar, slot, reach, engagement, ER). The data is a simulated signal for this exercise - treat it as the ground truth to optimize against.\n\nTHE TARGET METRIC IS MEAN ENGAGEMENT ACTIONS PER POST (likes+comments+saves+shares). Slots and pillars mainly change REACH (audience size); formats change both reach and rate. So compare engagement_by_slot / engagement_by_pillar / engagement_by_format and the per-post rows - NOT engagement rate alone.\n\nCAUSAL HYGIENE (critical, n is small):\n- Beware confounding: a reel inflates whatever slot/pillar it sits in. When judging a slot or pillar, compare like-for-like (image posts vs image posts) using the per-post rows, or explicitly note the confound.\n- Compare across batches when 2+ batches exist: if a slot/pillar was strong in one batch and weak in another, say why (what else changed?).\n- If an earlier directive was applied and the metric DROPPED batch-over-batch, say so plainly, diagnose it in evidence, and issue a corrective directive.\n\nProduce:\n1. summary: 2-4 sentences - what worked, what did not, each claim backed by a specific number; if the previous batch's directives hurt the target metric, own it and explain.\n2. learnings: exactly 3 to 5 directives for the NEXT batch, each on one of: format | slot | pillar | caption_style | hashtags.\n\nDirective rules:\n- Actionable by a copywriter: 'place the reel and 2 images in the 20:00 evening slot', not 'improve engagement'.\n- Only reference pillars, formats, and slots that appear in the data.\n- Respect the fixed weekly quota (exactly 1 reel + 1 carousel): direct WHERE to place formats, never to add more.\n- Keep one slot or pillar as a comparison holdout, and say which.\n- evidence: cite the numbers, e.g. 'image posts at evening-unwind averaged 39 actions vs 31 at late-morning'.\n\nOutput ONLY JSON: {\"summary\": \"...\", \"learnings\": [{\"insight_type\": \"keep|stop|try\", \"dimension\": \"format|slot|pillar|caption_style|hashtags\", \"directive\": \"...\", \"evidence\": \"...\"}]}"
+        }
+      }
+    },
+    {
+      "id": "lm_analyst",
+      "name": "Analyst Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        240
+      ],
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {
+          "temperature": 0.4,
+          "maxTokens": 4000
+        }
+      },
+      "credentials": {
+        "openRouterApi": {
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "parser_learn",
+      "name": "Learnings Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2200,
+        240
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "autoFix": true,
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"summary\": {\"type\": \"string\"},\n    \"learnings\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"insight_type\": {\"type\": \"string\"},\n          \"dimension\": {\"type\": \"string\"},\n          \"directive\": {\"type\": \"string\"},\n          \"evidence\": {\"type\": \"string\"}\n        },\n        \"required\": [\"insight_type\", \"dimension\", \"directive\"]\n      }\n    }\n  },\n  \"required\": [\"learnings\"]\n}"
+      }
+    },
+    {
+      "id": "code_learn_rows",
+      "name": "Emit Learnings Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const out = $input.first().json.output;\nconst aggJ = $('Aggregate Stats').first().json;\nconst next = aggJ.next_batch;\nreturn out.learnings.slice(0,5).map((l,i)=>({json:{\n  learning_id: 'b' + next + '-' + String(l.dimension||'general').replace(/[^a-z_]/gi,'') + '-' + (i+1),\n  batch_id: String(aggJ.latest_batch),\n  created_at: new Date().toISOString(),\n  insight_type: l.insight_type||'', dimension: l.dimension||'', directive: l.directive||'', evidence: l.evidence||'',\n  applied_in_batch: String(next)\n}}));"
+      }
+    },
+    {
+      "id": "sh4_learn",
+      "name": "Upsert Learnings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2640,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Learnings"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "learning_id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "sh4_runlog_read",
+      "name": "Read RunLog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2860,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RunLog"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_bench",
+      "name": "Compute Benchmarks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const aggJ = $('Aggregate Stats').first().json;\nconst agg = aggJ.agg;\nconst batches = aggJ.batches;\nconst cal = $('Read Calendar').all().map(i=>i.json).filter(r=>r.post_id && String(r.post_id).match(/^b\\d+-p\\d+$/));\nconst runlog = $('Read RunLog').all().map(i=>i.json).filter(r=>r.run_id);\nconst mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;\nconst rows = [];\nconst now = new Date().toISOString();\nfor (const b of batches){\n  const posts = cal.filter(r=>String(r.batch_id)===String(b));\n  const nums = k => posts.map(p=>parseFloat(p[k])).filter(x=>!isNaN(x));\n  rows.push({benchmark_id:'brand_consistency-b'+b, metric:'brand_consistency', value:+(mean(nums('judge_brand_score')).toFixed(2)), unit:'/5', batch_id:String(b), method:'mean of cross-model judge (gpt-4o-mini, temp 0, anchored rubric) final brand_consistency across batch', computed_at:now});\n  rows.push({benchmark_id:'arabic_quality-b'+b, metric:'arabic_quality', value:+(mean(nums('judge_arabic_score')).toFixed(2)), unit:'/5', batch_id:String(b), method:'mean judge arabic_naturalness (anti-translationese rubric, native-Egyptian anchor)', computed_at:now});\n  const lintPassed = posts.filter(p=>String(p.lint_pass)==='true').length;\n  rows.push({benchmark_id:'lint_pass_rate-b'+b, metric:'lint_pass_rate', value: posts.length?+((lintPassed/posts.length)*100).toFixed(0):0, unit:'%', batch_id:String(b), method:'deterministic lint: always-tags present, 7-11 tags, no banned tags, caption lengths, bilingual presence', computed_at:now});\n  const pre = nums('judge_brand_score_pre'), post = nums('judge_brand_score');\n  if (pre.length) rows.push({benchmark_id:'judge_uplift_revision-b'+b, metric:'judge_score_uplift_from_revision', value:+(mean(post)-mean(pre)).toFixed(2), unit:'points/5', batch_id:String(b), method:'mean judge brand score after evaluator-optimizer revision minus before', computed_at:now});\n  if (agg[b]) {\n    rows.push({benchmark_id:'mean_er-b'+b, metric:'mean_engagement_rate', value:+((agg[b].mean_er)*100).toFixed(3), unit:'%', batch_id:String(b), method:'SYNTHETIC seeded simulator; ER = engagement/reach; constants from hospitality IG benchmarks', computed_at:now});\n    rows.push({benchmark_id:'mean_engagement-b'+b, metric:'mean_engagement_per_post', value:agg[b].mean_engagement, unit:'actions/post', batch_id:String(b), method:'SYNTHETIC seeded simulator; likes+comments+saves+shares per post', computed_at:now});\n    rows.push({benchmark_id:'mean_reach-b'+b, metric:'mean_reach_per_post', value:agg[b].mean_reach, unit:'accounts/post', batch_id:String(b), method:'SYNTHETIC seeded simulator', computed_at:now});\n  }\n  const rl = runlog.filter(r=>String(r.batch_id)===String(b) && r.workflow==='WF2-content-studio' && r.cost_per_post_usd);\n  if (rl.length){\n    const last = rl[rl.length-1];\n    rows.push({benchmark_id:'cost_per_post-b'+b, metric:'cost_per_post', value:parseFloat(last.cost_per_post_usd)||0, unit:'USD', batch_id:String(b), method:'OpenRouter account usage delta across the WF2 run divided by posts approved', computed_at:now});\n    if (last.duration_s && last.posts_count) rows.push({benchmark_id:'latency_per_post-b'+b, metric:'latency_per_post', value:+(parseFloat(last.duration_s)/parseFloat(last.posts_count)).toFixed(1), unit:'s (incl. approval wait)', batch_id:String(b), method:'WF2 wall-clock duration / posts in batch; includes human approval wait time', computed_at:now});\n  }\n}\nif (batches.length>=2){\n  const a = agg[batches[batches.length-2]], b2 = agg[batches[batches.length-1]];\n  const span = 'b'+batches[batches.length-2]+'-to-b'+batches[batches.length-1];\n  if (a && b2 && a.mean_engagement>0) rows.push({benchmark_id:'optimization_uplift-'+span, metric:'optimization_uplift_engagement', value:+(((b2.mean_engagement-a.mean_engagement)/a.mean_engagement)*100).toFixed(1), unit:'%', batch_id:batches.slice(-2).join('->'), method:'PRIMARY target metric: (mean engagement actions per post after - before) / before, on the seeded synthetic simulator. Slot/pillar directives grow audience reached, so engagement per post (reach x rate) is the honest lever; validates loop mechanics, not real IG performance', computed_at:now});\n  if (a && b2 && a.mean_reach>0) rows.push({benchmark_id:'reach_uplift-'+span, metric:'optimization_uplift_reach', value:+(((b2.mean_reach-a.mean_reach)/a.mean_reach)*100).toFixed(1), unit:'%', batch_id:batches.slice(-2).join('->'), method:'secondary: mean simulated reach per post, before vs after', computed_at:now});\n  if (a && b2 && a.mean_er>0) rows.push({benchmark_id:'er_uplift-'+span, metric:'optimization_uplift_er', value:+(((b2.mean_er-a.mean_er)/a.mean_er)*100).toFixed(1), unit:'%', batch_id:batches.slice(-2).join('->'), method:'secondary: mean ER before vs after; with a fixed weekly format quota ER moves little by design - reported for completeness', computed_at:now});\n}\nreturn rows.map(r=>({json:r}));"
+      }
+    },
+    {
+      "id": "sh4_bench",
+      "name": "Upsert Benchmarks",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3300,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Benchmarks"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "benchmark_id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_stats4",
+      "name": "Run Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const init = $('Init Run').first().json;\nconst aggJ = $('Aggregate Stats').first().json;\nconst finished = new Date().toISOString();\nreturn [{json:{\n  run_id: init.run_id, workflow:'WF4-analyst', batch_id: String(aggJ.latest_batch),\n  started_at: init.started_at, finished_at: finished,\n  duration_s: String(Math.round((new Date(finished).getTime()-new Date(init.started_at).getTime())/1000)),\n  llm_cost_usd:'', posts_count: String(aggJ.metrics_count), cost_per_post_usd:'',\n  notes: 'metrics + learnings + benchmarks computed for batches ' + aggJ.batches.join(',')\n}}];"
+      }
+    },
+    {
+      "id": "sh4_runlog",
+      "name": "Log Run",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3720,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RunLog"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Run": {
+      "main": [
+        [
+          {
+            "node": "Read Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Config": {
+      "main": [
+        [
+          {
+            "node": "Read Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Calendar": {
+      "main": [
+        [
+          {
+            "node": "Select Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Published": {
+      "main": [
+        [
+          {
+            "node": "Mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode?": {
+      "main": [
+        [
+          {
+            "node": "Engagement Simulator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Engagement Simulator": {
+      "main": [
+        [
+          {
+            "node": "Upsert Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Insights": {
+      "main": [
+        [
+          {
+            "node": "Normalize Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Insights": {
+      "main": [
+        [
+          {
+            "node": "Upsert Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Metrics": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Stats": {
+      "main": [
+        [
+          {
+            "node": "Performance Analyst",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyst Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Performance Analyst",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Learnings Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Learnings Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Performance Analyst",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Performance Analyst": {
+      "main": [
+        [
+          {
+            "node": "Emit Learnings Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emit Learnings Rows": {
+      "main": [
+        [
+          {
+            "node": "Upsert Learnings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Learnings": {
+      "main": [
+        [
+          {
+            "node": "Read RunLog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read RunLog": {
+      "main": [
+        [
+          {
+            "node": "Compute Benchmarks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Benchmarks": {
+      "main": [
+        [
+          {
+            "node": "Upsert Benchmarks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Benchmarks": {
+      "main": [
+        [
+          {
+            "node": "Run Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Stats": {
+      "main": [
+        [
+          {
+            "node": "Log Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

@@ -1,0 +1,981 @@
+{
+  "name": "InstaBay - 3 Publisher",
+  "nodes": [
+    {
+      "id": "sched3",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        -120
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wh3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        80
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-publish",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "121ba2a6-eeb5-4106-9c73-86ab0c108e86"
+    },
+    {
+      "id": "code_init3",
+      "name": "Init Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst body = (j && j.body) || {};\nreturn [{ json: {\n  run_id: 'wf3-' + $execution.id,\n  started_at: new Date().toISOString(),\n  force: body.force === true || body.force === 'true'\n}}];"
+      }
+    },
+    {
+      "id": "sh3_config",
+      "name": "Read Config",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        400,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "sh3_cal",
+      "name": "Read Calendar",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        600,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calendar"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_due",
+      "name": "Select Due",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const cfgRows = $('Read Config').all().map(i=>i.json).filter(r=>r.key);\nconst config = Object.fromEntries(cfgRows.map(r=>[r.key,String(r.value)]));\nconst force = $('Init Run').first().json.force === true;\nconst rows = $('Read Calendar').all().map(i=>i.json).filter(r=>r.post_id && r.status==='approved');\nconst now = DateTime.now();\nconst due = rows.filter(r=>{ if (force) return true; try { return DateTime.fromISO(String(r.publish_at)) <= now; } catch(e){ return false; } });\nreturn due.map(r=>({json:{...r,\n  publish_mode: config.publish_mode||'dry_run',\n  ig_user_id: config.ig_user_id||'',\n  graph_api_version: config.graph_api_version||'v25.0',\n  ig_access_token: config.ig_access_token||''\n}}));"
+      }
+    },
+    {
+      "id": "switch_mode",
+      "name": "Publish Mode?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "DryRun",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "m1",
+                    "leftValue": "={{ $json.publish_mode }}",
+                    "rightValue": "dry_run",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "Live",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "m2",
+                    "leftValue": "={{ $json.publish_mode }}",
+                    "rightValue": "live",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_sim",
+      "name": "Simulate Publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        -140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r = $json;\nconst v = r.graph_api_version; const ig = r.ig_user_id;\nconst base = 'https://graph.facebook.com/' + v + '/';\nconst caption = (r.caption_en + '\\n\\n' + r.caption_ar + '\\n\\n' + r.hashtags);\nlet seq = [];\nif (r.format === 'reel') {\n  seq = [\n    {step:1, method:'POST', url: base+ig+'/media', payload:{media_type:'REELS', video_url:'<PUBLIC_HTTPS_VIDEO_URL>', caption, share_to_feed:true, access_token:'<TOKEN>'}},\n    {step:2, method:'GET', url: base+'<CREATION_ID>?fields=status_code', note:'poll ~1/min up to 5 min until FINISHED; publishing while IN_PROGRESS returns error 9007'},\n    {step:3, method:'POST', url: base+ig+'/media_publish', payload:{creation_id:'<CREATION_ID>', access_token:'<TOKEN>'}}\n  ];\n} else if (r.format === 'carousel') {\n  seq = [\n    {step:1, method:'POST', url: base+ig+'/media', payload:{image_url:r.image_url, is_carousel_item:true, access_token:'<TOKEN>'}, note:'repeat per child slide (2-10), collect child creation ids'},\n    {step:2, method:'POST', url: base+ig+'/media', payload:{media_type:'CAROUSEL', children:'<CHILD_ID_1>,<CHILD_ID_2>,...', caption, access_token:'<TOKEN>'}},\n    {step:3, method:'POST', url: base+ig+'/media_publish', payload:{creation_id:'<CAROUSEL_CONTAINER_ID>', access_token:'<TOKEN>'}}\n  ];\n} else {\n  seq = [\n    {step:1, method:'POST', url: base+ig+'/media', payload:{image_url:r.image_url, caption, alt_text:r.topic, access_token:'<TOKEN>'}},\n    {step:2, method:'POST', url: base+ig+'/media_publish', payload:{creation_id:'<CREATION_ID>', access_token:'<TOKEN>'}}\n  ];\n}\nconst pre = {step:0, method:'GET', url: base+ig+'/content_publishing_limit?fields=quota_usage', note:'check quota_usage < 100 API posts per rolling 24h before publishing'};\nreturn {json:{\n  post_id: r.post_id,\n  status: 'published',\n  media_id: 'DRYRUN_' + r.post_id,\n  published_at: new Date().toISOString(),\n  api_payload_log: JSON.stringify({mode:'dry_run', sequence:[pre, ...seq]})\n}};"
+      }
+    },
+    {
+      "id": "http_quota",
+      "name": "Check Quota",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1220,
+        140
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/{{ $json.graph_api_version }}/{{ $json.ig_user_id }}/content_publishing_limit?fields=quota_usage&access_token={{ $json.ig_access_token }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "code_quota_guard",
+      "name": "Quota Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp = $json;\nconst orig = $('Publish Mode?').item.json;\nconst quota = (resp.data && resp.data[0]) ? resp.data[0].quota_usage : null;\nif (quota !== null && quota >= 100) throw new Error('Instagram publishing quota reached (100 posts / rolling 24h)');\nreturn {json: orig};"
+      }
+    },
+    {
+      "id": "switch_media",
+      "name": "Media Type?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1620,
+        140
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Reel",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "t1",
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "reel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "Image",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "t2",
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "Carousel",
+              "renameOutput": true,
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "leftValue": ""
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "t3",
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "carousel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "http_reel_container",
+      "name": "Create Reel Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1860,
+        40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{ $json.graph_api_version }}/{{ $json.ig_user_id }}/media",
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "media_type",
+              "value": "REELS"
+            },
+            {
+              "name": "video_url",
+              "value": "={{ $json.video_url || 'SET_PUBLIC_HTTPS_VIDEO_URL' }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption_en }}\n\n{{ $json.caption_ar }}\n\n{{ $json.hashtags }}"
+            },
+            {
+              "name": "share_to_feed",
+              "value": "true"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.ig_access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wait_reel",
+      "name": "Wait 60s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2060,
+        40
+      ],
+      "webhookId": "5f8e2d1a-7b3c-4e9f-a1d2-6c8b4a5e7f90",
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 60,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "http_poll",
+      "name": "Poll Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2260,
+        40
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/{{ $('Select Due').item.json.graph_api_version }}/{{ $('Create Reel Container').item.json.id }}?fields=status_code&access_token={{ $('Select Due').item.json.ig_access_token }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "if_ready",
+      "name": "Container Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2460,
+        40
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "r1",
+              "leftValue": "={{ $json.status_code }}",
+              "rightValue": "FINISHED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_poll_guard",
+      "name": "Poll Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        220
+      ],
+      "parameters": {
+        "jsCode": "if ($runIndex >= 10) throw new Error('Reel container not ready after 10 polls (~10 min) - marking failed');\nreturn $input.all();"
+      }
+    },
+    {
+      "id": "http_publish_reel",
+      "name": "Publish Reel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2680,
+        40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{ $('Select Due').item.json.graph_api_version }}/{{ $('Select Due').item.json.ig_user_id }}/media_publish",
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $('Create Reel Container').item.json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $('Select Due').item.json.ig_access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "http_img_container",
+      "name": "Create Image Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1860,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{ $json.graph_api_version }}/{{ $json.ig_user_id }}/media",
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption_en }}\n\n{{ $json.caption_ar }}\n\n{{ $json.hashtags }}"
+            },
+            {
+              "name": "alt_text",
+              "value": "={{ $json.topic }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.ig_access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "http_publish_img",
+      "name": "Publish Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2060,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{ $('Select Due').item.json.graph_api_version }}/{{ $('Select Due').item.json.ig_user_id }}/media_publish",
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $('Select Due').item.json.ig_access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "set_carousel_todo",
+      "name": "Carousel TODO",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1860,
+        420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ct1",
+              "name": "post_id",
+              "type": "string",
+              "value": "={{ $json.post_id }}"
+            },
+            {
+              "id": "ct2",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "ct3",
+              "name": "media_id",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "ct4",
+              "name": "api_payload_log",
+              "type": "string",
+              "value": "live carousel path not implemented in this time-box (needs child-container loop); publish carousels via dry_run or extend the workflow"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_norm_live",
+      "name": "Normalize Live Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp = $json;\nlet orig = {};\ntry { orig = $('Media Type?').item.json; } catch(e) {}\nreturn {json:{\n  post_id: orig.post_id || resp.post_id || '',\n  status: resp.status === 'failed' ? 'failed' : 'published',\n  media_id: resp.id || resp.media_id || '',\n  published_at: new Date().toISOString(),\n  api_payload_log: resp.api_payload_log || JSON.stringify({mode:'live', publish_response: resp})\n}};"
+      }
+    },
+    {
+      "id": "sh3_update",
+      "name": "Update Published",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3100,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calendar"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "post_id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "code_stats3",
+      "name": "Run Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i=>i.json);\nconst init = $('Init Run').first().json;\nconst finished = new Date().toISOString();\nconst m = items.length ? String(items[0].post_id||'').match(/^b(\\d+)-/) : null;\nlet mode = 'n/a';\ntry { mode = $('Select Due').first().json.publish_mode; } catch(e) {}\nreturn [{json:{\n  run_id: init.run_id, workflow:'WF3-publisher', batch_id: m ? m[1] : '',\n  started_at: init.started_at, finished_at: finished,\n  duration_s: String(Math.round((new Date(finished).getTime()-new Date(init.started_at).getTime())/1000)),\n  llm_cost_usd:'', posts_count: String(items.length), cost_per_post_usd:'',\n  notes: 'publish run, mode=' + mode\n}}];"
+      }
+    },
+    {
+      "id": "sh3_runlog",
+      "name": "Log Run",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3500,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RunLog"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Run": {
+      "main": [
+        [
+          {
+            "node": "Read Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Config": {
+      "main": [
+        [
+          {
+            "node": "Read Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Calendar": {
+      "main": [
+        [
+          {
+            "node": "Select Due",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Due": {
+      "main": [
+        [
+          {
+            "node": "Publish Mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Mode?": {
+      "main": [
+        [
+          {
+            "node": "Simulate Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulate Publish": {
+      "main": [
+        [
+          {
+            "node": "Update Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Quota": {
+      "main": [
+        [
+          {
+            "node": "Quota Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quota Guard": {
+      "main": [
+        [
+          {
+            "node": "Media Type?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Type?": {
+      "main": [
+        [
+          {
+            "node": "Create Reel Container",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Image Container",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Carousel TODO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Reel Container": {
+      "main": [
+        [
+          {
+            "node": "Wait 60s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60s": {
+      "main": [
+        [
+          {
+            "node": "Poll Container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Container": {
+      "main": [
+        [
+          {
+            "node": "Container Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Container Ready?": {
+      "main": [
+        [
+          {
+            "node": "Publish Reel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Poll Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Guard": {
+      "main": [
+        [
+          {
+            "node": "Wait 60s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Reel": {
+      "main": [
+        [
+          {
+            "node": "Normalize Live Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Image Container": {
+      "main": [
+        [
+          {
+            "node": "Publish Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Image": {
+      "main": [
+        [
+          {
+            "node": "Normalize Live Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carousel TODO": {
+      "main": [
+        [
+          {
+            "node": "Normalize Live Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Live Result": {
+      "main": [
+        [
+          {
+            "node": "Update Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Published": {
+      "main": [
+        [
+          {
+            "node": "Run Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Stats": {
+      "main": [
+        [
+          {
+            "node": "Log Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

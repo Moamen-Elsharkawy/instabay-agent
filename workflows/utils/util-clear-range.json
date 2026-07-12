@@ -1,0 +1,95 @@
+{
+  "name": "InstaBay - Util Clear Range",
+  "nodes": [
+    {
+      "id": "whu",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-util-clear",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "56f4bcab-22d7-4376-a541-311a493e3f3c"
+    },
+    {
+      "id": "http_clear",
+      "name": "Clear Range",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/values/{{ encodeURIComponent($json.body.range) }}:clear",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "set_resu",
+      "name": "Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "u1",
+              "name": "clearedRange",
+              "type": "string",
+              "value": "={{ $json.clearedRange }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Clear Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Range": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo"
+  }
+}

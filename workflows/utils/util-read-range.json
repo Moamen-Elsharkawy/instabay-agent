@@ -1,0 +1,61 @@
+{
+  "name": "InstaBay - Util Read Range",
+  "nodes": [
+    {
+      "id": "whr",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instabay-util-read",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "1248cf54-e402-4ea1-8cdf-8abb9de31b1d"
+    },
+    {
+      "id": "http_read",
+      "name": "Read Range",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/values/{{ encodeURIComponent($json.body.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo"
+  }
+}
