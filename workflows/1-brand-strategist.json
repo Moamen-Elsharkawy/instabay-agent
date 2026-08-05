@@ -4,6 +4,7 @@
     {
       "id": "wh_brand",
       "name": "Webhook",
+      "notes": "What: HTTP entry point that starts one brand run when a POST request arrives.\nIn: A POST to the webhook path instabay-brand; no node downstream reads the request body.\nOut: One item passed straight to Brief.\nWhy: responseMode is lastNode, so the caller receives whatever the final Result node emits.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -21,6 +22,7 @@
     {
       "id": "set_brief",
       "name": "Brief",
+      "notes": "What: Set node that hardcodes the client brief text and stamps the run with an id and a timestamp.\nIn: The single item from Webhook; nothing from the request is used.\nOut: client_brief, run_id as wf1- plus the execution id, and started_at from $now.toISO().\nWhy: started_at is captured here so Run Stats can measure the whole run; $now uses timezone Africa/Cairo.",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
@@ -56,6 +58,7 @@
     {
       "id": "agent_strategist",
       "name": "Brand Strategist",
+      "notes": "What: AI Agent that expands the thin brief into one Instagram brand constitution JSON object.\nIn: The item from Brief; a nine point system message plus client_brief and today's date in yyyy-MM-dd.\nOut: The parsed object under the output key: voice, audiences, pillars, hashtags, cadence, one_pager_md.\nWhy: hasOutputParser is true so downstream code reads json.output; retryOnFail gives it one retry.",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
@@ -76,6 +79,7 @@
     {
       "id": "lm_gen",
       "name": "Gen Model",
+      "notes": "What: OpenRouter chat model node on google/gemini-2.5-flash, credential OpenRouter account, options empty.\nIn: Prompt requests from Brand Strategist and Brand Schema, the two nodes it is attached to.\nOut: Model completions returned to both nodes over the single ai_languageModel connection.\nWhy: The one ai_languageModel output fans out to both, so the autofix repair reuses the same model.",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
@@ -95,6 +99,7 @@
     {
       "id": "parser_brand",
       "name": "Brand Schema",
+      "notes": "What: Structured output parser holding a manual JSON schema of 16 fields, 8 of them required.\nIn: The raw model reply from Brand Strategist, which it attaches to over ai_outputParser.\nOut: A schema checked JSON object that the agent then returns under output.\nWhy: autoFix is true and it is wired to Gen Model, so a malformed reply is retried, not failed.",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
@@ -110,6 +115,7 @@
     {
       "id": "code_flatten",
       "name": "Flatten Brand",
+      "notes": "What: Code node that reads $input.first().json.output and stringifies every array and object field.\nIn: The parsed brand constitution object from Brand Strategist; only the first item is used.\nOut: created_at, version v1 and 16 brand fields; brand_name falls back to Insta Bay Resort & Spa.\nWhy: Every field has a fallback first, so a missing key becomes an empty string or [], never undefined.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -123,6 +129,7 @@
     {
       "id": "sheets_brand",
       "name": "Write Brand",
+      "notes": "What: Appends one row to the Brand tab of spreadsheet 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nIn: The single flat item from Flatten Brand, auto mapped to columns by field name.\nOut: The appended row, passed on to Run Stats.\nWhy: The operation is append, never update, so every run keeps its own version of the constitution.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -162,6 +169,7 @@
     {
       "id": "code_runstats",
       "name": "Run Stats",
+      "notes": "What: Code node that builds one run log row and computes the run duration in whole seconds.\nIn: The Write Brand row, unused; started_at and run_id are read back from Brief by node name.\nOut: One row with run_id, workflow WF1-brand-strategist, both timestamps, duration_s as a string, notes.\nWhy: The four empty columns batch_id, llm_cost_usd, posts_count and cost_per_post_usd keep RunLog aligned.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -175,6 +183,7 @@
     {
       "id": "sheets_runlog",
       "name": "Log Run",
+      "notes": "What: Appends the run stats row to the RunLog tab of the same spreadsheet as Write Brand.\nIn: The single row item from Run Stats, auto mapped to columns by field name.\nOut: The appended row, passed on to Result.\nWhy: Same documentId as Write Brand, so the brand output and the run telemetry sit in one file.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -214,6 +223,7 @@
     {
       "id": "set_result",
       "name": "Result",
+      "notes": "What: Set node that builds the small JSON reply returned to the webhook caller.\nIn: The Log Run row; brand_name comes from Flatten Brand and run_id from Brief, both read by node name.\nOut: status set to brand constitution written, plus brand_name, run_id and sheet as the edit URL.\nWhy: It is the last node and the Webhook responseMode is lastNode, so this is the response body.",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [

@@ -4,6 +4,7 @@
     {
       "id": "whr",
       "name": "Webhook",
+      "notes": "What: Starts the read helper when someone posts a JSON body asking for a sheet range.\nIn: A POST to the webhook path instabay-util-read carrying a JSON body with a range field.\nOut: One item whose body holds the posted JSON, so the next node reads body.range.\nWhy: responseMode is lastNode, so the HTTP reply is whatever the last node returns, no Respond node.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -21,6 +22,7 @@
     {
       "id": "http_read",
       "name": "Read Range",
+      "notes": "What: Reads any A1 range from the hardcoded sheet file 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nIn: The body.range as an A1 string, sent as a GET to the Sheets values path with OAuth2 auth.\nOut: The raw Google reply with the resolved range, majorDimension, and a values array of rows if any.\nWhy: The range goes through encodeURIComponent, so a tab name with spaces still builds a valid URL.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [

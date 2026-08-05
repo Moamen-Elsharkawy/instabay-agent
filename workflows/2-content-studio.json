@@ -4,6 +4,7 @@
     {
       "id": "sched2",
       "name": "Schedule",
+      "notes": "What: Cron trigger that starts one content batch run every week.\nIn: Fires on cron 0 9 * * 0, so 09:00 every Sunday in the workflow timezone Africa/Cairo.\nOut: One empty item that begins the run.",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
@@ -24,6 +25,7 @@
     {
       "id": "wh2",
       "name": "Webhook",
+      "notes": "What: HTTP entry point so a batch can be started by hand without waiting for Sunday.\nIn: A POST to the path instabay-studio, responseMode onReceived so the caller gets an instant reply.\nOut: One item holding the request headers and body.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -41,6 +43,7 @@
     {
       "id": "code_init2",
       "name": "Init Run",
+      "notes": "What: Code node that stamps the run with an id, a start time, and which trigger fired it.\nIn: Either the empty schedule item or the webhook request item.\nOut: One item with run_id wf2-<execution id>, started_at, trigger, and note taken from body.note.\nWhy: It tells webhook from schedule by looking for webhookUrl or headers on the incoming item.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -54,6 +57,7 @@
     {
       "id": "http_cost_before",
       "name": "Cost Before",
+      "notes": "What: Reads the OpenRouter account spend before any model runs.\nIn: The run item from Init Run; executeOnce so it calls only one time.\nOut: The key info object; the brief later reads data.usage as the spend so far.\nWhy: GET on openrouter.ai/api/v1/auth/key, set to continue on error so billing never kills the run.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -79,6 +83,7 @@
     {
       "id": "sh_read_brand",
       "name": "Read Brand",
+      "notes": "What: Reads every row of the Brand tab so the run has the brand constitution.\nIn: The item from Cost Before; executeOnce so it reads only one time.\nOut: All Brand rows, one item per row, carrying brand_name, posting_cadence and the hashtag lists.\nWhy: read operation on tab Brand of spreadsheet 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -112,6 +117,7 @@
     {
       "id": "sh_read_config",
       "name": "Read Config",
+      "notes": "What: Reads the Config tab, the key and value settings that steer the run.\nIn: The items from Read Brand; executeOnce so it reads only one time.\nOut: All Config rows, each with key, value and row_number.\nWhy: read on tab Config of the same spreadsheet; it holds batch_counter, posts_per_batch, approver_email.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -145,6 +151,7 @@
     {
       "id": "sh_read_learn",
       "name": "Read Learnings",
+      "notes": "What: Reads the Learnings tab, the directives distilled from past batch performance.\nIn: The items from Read Config; executeOnce so it reads only one time.\nOut: All Learnings rows with insight_type, dimension, directive, evidence and applied_in_batch.\nWhy: read on tab Learnings of the same spreadsheet; retryOnFail with maxTries 2, so one retry.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -178,6 +185,7 @@
     {
       "id": "sh_read_cal",
       "name": "Read Calendar",
+      "notes": "What: Reads the Calendar tab so the run knows which topics were already posted.\nIn: The items from Read Learnings; executeOnce so it reads only one time.\nOut: All Calendar rows, one item per past post row.\nWhy: read on tab Calendar of the same spreadsheet; the brief keeps rows with a post_id and takes topic.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -211,6 +219,7 @@
     {
       "id": "code_brief2",
       "name": "Build Creative Brief",
+      "notes": "What: Code node that folds brand, config, learnings and past topics into one creative brief item.\nIn: Rows from the four sheet reads plus Init Run and Cost Before, all pulled by node name.\nOut: One item with brand, config, batch_id, batch learnings, past topics, slots, formats and the post dates.\nWhy: It throws when the Brand tab is empty, and dates the batch one post per day from tomorrow.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -224,6 +233,7 @@
     {
       "id": "agent_creative",
       "name": "Creative Director",
+      "notes": "What: Agent that writes the whole batch of Instagram posts for the Insta Bay resort, in Arabic and English.\nIn: The creative brief item; brand, learnings, used topics, dates, slots and formats go into the prompt.\nOut: One item whose output holds a posts array with captions, hashtags, image prompt and reel fields.\nWhy: Its system prompt bans invented prices or facilities and requires native Arabic, never a translation.",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
@@ -244,6 +254,7 @@
     {
       "id": "lm_gen2",
       "name": "Gen Model",
+      "notes": "What: OpenRouter chat model node running anthropic/claude-haiku-4.5, temperature 0.8, max 16000 tokens.\nIn: Prompts from the nodes it is attached to.\nOut: The raw model reply those nodes then parse.\nWhy: Wired as ai_languageModel to Creative Director, Reviser and the Batch Schema autoFix parser.",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
@@ -266,6 +277,7 @@
     {
       "id": "parser_batch",
       "name": "Batch Schema",
+      "notes": "What: Structured output parser holding the JSON schema for a batch of posts.\nIn: The raw model text from Creative Director or Reviser.\nOut: A parsed posts array; post_id, date, format, pillar, topic, both captions and hashtags are required.\nWhy: Attached as ai_outputParser to Creative Director and Reviser; autoFix on, so bad JSON gets repaired.",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
@@ -281,6 +293,7 @@
     {
       "id": "agent_judge",
       "name": "Brand Judge",
+      "notes": "What: Second agent that scores every post against a brand rubric and says pass or fail.\nIn: The posts array from Guard Batch plus the brand constitution pulled from Build Creative Brief.\nOut: One item with an evaluations array: three 1 to 5 scores, a pass boolean and revision notes per post.\nWhy: pass is true only when all three scores are 4 or more; it runs on Judge Model, not Gen Model.",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
@@ -301,6 +314,7 @@
     {
       "id": "lm_judge",
       "name": "Judge Model",
+      "notes": "What: OpenRouter chat model node running openai/gpt-4o-mini, temperature 0, max 8000 tokens.\nIn: Prompts from the nodes it is attached to.\nOut: The raw scoring text those nodes then parse.\nWhy: Feeds Brand Judge, Re-Judge and Scores Schema as ai_languageModel; temperature 0 keeps scoring stable.",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
@@ -323,6 +337,7 @@
     {
       "id": "parser_scores",
       "name": "Scores Schema",
+      "notes": "What: Structured output parser holding the JSON schema for the judge scores.\nIn: The raw model text from Brand Judge or Re-Judge.\nOut: A parsed evaluations array; post_id, the three scores and pass are required, revision_notes is not.\nWhy: Attached as ai_outputParser to Brand Judge and Re-Judge; autoFix on, so a bad score list is repaired.",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
@@ -338,6 +353,7 @@
     {
       "id": "code_verdicts",
       "name": "Apply Verdicts And Lint",
+      "notes": "What: Code node that joins judge scores onto the posts and runs its own hard checks on each one.\nIn: Evaluations from Brand Judge on the input, posts from Creative Director, brand from Build Creative Brief.\nOut: One item: posts with scores, lint_issues and needs_revision, plus any_revision, batch_issues, pre_scores.\nWhy: Lint checks tag count 7 to 11, always and banned tags, caption length, reel storyboard and one reel.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -351,6 +367,7 @@
     {
       "id": "if_revision",
       "name": "Needs Revision?",
+      "notes": "What: IF node that splits the batch into the fix path or the straight to publish path.\nIn: The single item from Apply Verdicts And Lint, testing the boolean any_revision.\nOut: True output goes to Prep Revision; false output goes straight to Finalize Batch.",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -385,6 +402,7 @@
     {
       "id": "code_prep_rev",
       "name": "Prep Revision",
+      "notes": "What: Code node that gathers the posts, the open issues and any human feedback for the revision agent.\nIn: From Needs Revision? true or Approval? Changes; posts from Merge Final Batch or Apply Verdicts And Lint.\nOut: One item with posts, batch_issues, human_feedback, brand and batch_id.\nWhy: The Merge-first fallback lets one node serve the auto fix pass and the human change-request loop.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -398,6 +416,7 @@
     {
       "id": "agent_reviser",
       "name": "Reviser",
+      "notes": "What: Agent that rewrites only the failing posts and applies human feedback to the whole batch.\nIn: The prep item with posts, judge notes, lint issues, batch issues, human feedback and the brand.\nOut: One item whose output holds the full posts array, with passing posts returned unchanged.\nWhy: Its prompt says human feedback outranks the judge notes whenever the two conflict.",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
@@ -418,6 +437,7 @@
     {
       "id": "agent_rejudge",
       "name": "Re-Judge",
+      "notes": "What: Agent that scores the revised batch again using the same rubric as the first judge.\nIn: The revised posts array from Reviser plus the brand from Build Creative Brief.\nOut: One item with a fresh evaluations array, exactly the same shape as the first judge.\nWhy: Its system message is identical to Brand Judge, so before and after scores stay comparable.",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
@@ -438,6 +458,7 @@
     {
       "id": "code_merge",
       "name": "Merge Final Batch",
+      "notes": "What: Code node that merges revised posts over the originals and re-runs the hashtag lint.\nIn: Revised posts from Reviser, base posts from Prep Revision, new evaluations from Re-Judge on the input.\nOut: One item with revised true and merged posts carrying new scores, _pre scores and revision_count + 1.\nWhy: It keeps the first pass brand and arabic scores as _pre fields, taken from Apply Verdicts And Lint.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -451,6 +472,7 @@
     {
       "id": "code_finalize",
       "name": "Finalize Batch",
+      "notes": "What: Code node that turns each post into one flat sheet row with a publish time and an image URL.\nIn: One item of posts, from the false branch of Needs Revision? or from Merge Final Batch.\nOut: One row per post: publish_at in Cairo time, space-joined hashtags, image_url, status pending, scores.\nWhy: image_url calls image.pollinations.ai at 1080x1350 with an FNV hash of post_id as the fixed seed.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -464,6 +486,7 @@
     {
       "id": "sh_upsert_cal",
       "name": "Upsert Calendar",
+      "notes": "What: Writes every finished post row into the Calendar tab, inserting new ones and updating old ones.\nIn: One item per post from Finalize Batch.\nOut: The written rows, passed on to the approval email step.\nWhy: appendOrUpdate on tab Calendar matching on post_id, so re-running a batch never duplicates rows.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -505,6 +528,7 @@
     {
       "id": "code_email",
       "name": "Format Approval Email",
+      "notes": "What: Code node that builds the HTML review sheet showing every post in the batch.\nIn: All the post rows written by Upsert Calendar.\nOut: One item with subject, html, batch_id, posts_count and approval_url.\nWhy: It reads $execution.resumeFormUrl, the Approval Gate link, before that Wait node has run.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -518,6 +542,7 @@
     {
       "id": "switch_approval",
       "name": "Approval?",
+      "notes": "What: Switch that routes the human decision to the approve path or back into the revision loop.\nIn: The form answer item from Approval Gate, reading the Decision field.\nOut: Output Approve goes to Mark Approved; output Changes goes back to Prep Revision.\nWhy: Approve all and Request changes are the only two dropdown options, so every submission matches.",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
@@ -583,6 +608,7 @@
     {
       "id": "code_mark_approved",
       "name": "Mark Approved",
+      "notes": "What: Code node that builds a small update row per post marking it approved right now.\nIn: All the rows written earlier by Upsert Calendar, pulled by node name.\nOut: One item per post with only post_id, status approved and an approved_at timestamp.\nWhy: It rebuilds from Upsert Calendar because the form answer item carries no post data.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -596,6 +622,7 @@
     {
       "id": "sh_update_approved",
       "name": "Update Approved",
+      "notes": "What: Writes the approved status back onto each post row in the Calendar tab.\nIn: One slim item per post from Mark Approved.\nOut: The updated Calendar rows.\nWhy: appendOrUpdate on tab Calendar matching on post_id, so only status and approved_at change.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -637,6 +664,7 @@
     {
       "id": "http_cost_after",
       "name": "Cost After",
+      "notes": "What: Reads the OpenRouter account spend again once the batch has been approved.\nIn: The updated rows from Update Approved; executeOnce so it calls only one time.\nOut: The key info object; Run Stats reads data.usage as the spend after the run.\nWhy: GET on openrouter.ai/api/v1/auth/key, continue on error so billing never blocks the run.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -662,6 +690,7 @@
     {
       "id": "code_runstats2",
       "name": "Run Stats",
+      "notes": "What: Code node that computes run duration, model cost and cost per post.\nIn: started_at and cost_before from the brief, spend from Cost After, post count from Mark Approved.\nOut: One RunLog row with run_id, workflow WF2-content-studio, batch_id, timings, cost and posts_count.\nWhy: Cost is the difference between the two OpenRouter spend reads, rounded to four decimals.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -675,6 +704,7 @@
     {
       "id": "sh_runlog2",
       "name": "Log Run",
+      "notes": "What: Appends the run statistics row to the RunLog tab.\nIn: The single stats row from Run Stats.\nOut: The appended row, passed on to the counter bump.\nWhy: append operation on tab RunLog of the same spreadsheet; retryOnFail with maxTries 2, so one retry.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -714,6 +744,7 @@
     {
       "id": "code_bump",
       "name": "Bump Batch Counter",
+      "notes": "What: Code node that reads the current batch_counter from Config and produces its next value.\nIn: All Config rows pulled from Read Config, searched for the key batch_counter.\nOut: One item with row_number, key batch_counter and the value raised by one.\nWhy: It throws when the batch_counter row is missing, so the counter can never silently stop moving.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -727,6 +758,7 @@
     {
       "id": "sh_bump",
       "name": "Write Batch Counter",
+      "notes": "What: Writes the new batch number back into the Config tab.\nIn: The single row from Bump Batch Counter.\nOut: The updated Config row; this is the last node of the run.\nWhy: update operation on tab Config matching on row_number, not on key, so it edits that exact row.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -768,6 +800,7 @@
     {
       "id": "code_guard",
       "name": "Guard Batch",
+      "notes": "What: Code node that throws when the generated batch is missing posts, the wrong size, or has bad ids.\nIn: The parsed output object from Creative Director.\nOut: One item carrying the same output object, so Brand Judge still reads output.posts.\nWhy: It stops truncated generations and autofix hallucinations before they reach the judge or the sheet.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -781,6 +814,7 @@
     {
       "id": "code_appr_row",
       "name": "Approval Link Row",
+      "notes": "What: Code node that builds one RunLog shaped row carrying the approval form link.\nIn: The email item from Format Approval Email plus run_id, batch_id and started_at from the brief.\nOut: One row with workflow WF2-approval-link and the approval URL sitting in the notes column.\nWhy: The link is saved to the sheet before the email sends, so a failed send still leaves it recoverable.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -794,6 +828,7 @@
     {
       "id": "sh_appr_log",
       "name": "Log Approval Link",
+      "notes": "What: Appends the approval link row to the RunLog tab.\nIn: The single row from Approval Link Row.\nOut: The appended row, passed on to the email step.\nWhy: append operation on tab RunLog of the same spreadsheet; retryOnFail with maxTries 2, so one retry.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -833,6 +868,7 @@
     {
       "id": "gmail_notify",
       "name": "Notify Approval",
+      "notes": "What: Sends the HTML approval email to the approver through Gmail.\nIn: Recipient from config.approver_email, subject and html from Format Approval Email.\nOut: The Gmail send result, passed to the Approval Gate.\nWhy: Set to continue on error, so a Gmail failure still lets the run reach the waiting form.",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
@@ -861,6 +897,7 @@
     {
       "id": "wait_approval",
       "name": "Approval Gate",
+      "notes": "What: Wait node that pauses the run and shows a web form with the batch and a decision.\nIn: Reached from Notify Approval; the run then waits until a human submits the form.\nOut: One item with the Decision choice and the Feedback textarea text.\nWhy: The form holds the rendered batch HTML, a required Decision dropdown and a free text feedback box.",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [

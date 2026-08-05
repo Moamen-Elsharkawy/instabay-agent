@@ -4,6 +4,7 @@
     {
       "id": "sched4",
       "name": "Schedule",
+      "notes": "What: Cron trigger that starts the analyst run once a day.\nIn: Fires on the cron expression 0 8 * * *, evaluated in the workflow timezone Africa/Cairo.\nOut: One item carrying the trigger timestamp, which Init Run replaces with its own fields.\nWhy: Cron rather than a preset interval, so the hour is fixed instead of relative to activation.",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
@@ -24,6 +25,7 @@
     {
       "id": "wh4",
       "name": "Webhook",
+      "notes": "What: HTTP entry point so the same run can be started by hand.\nIn: A POST to the path instabay-analyze.\nOut: One item with the request headers, query and body, all of which Init Run ignores.\nWhy: responseMode is lastNode, so the caller gets Log Run's output back as the HTTP reply.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -41,6 +43,7 @@
     {
       "id": "code_init4",
       "name": "Init Run",
+      "notes": "What: Code node that stamps a run id and a start time for this execution.\nIn: One item from either the Schedule or the Webhook.\nOut: One item with run_id set to wf4- plus the execution id, and started_at as an ISO timestamp.\nWhy: Run Stats reads both fields back at the end to build the audit row and compute duration_s.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -54,6 +57,7 @@
     {
       "id": "sh4_config",
       "name": "Read Config",
+      "notes": "What: Reads the Config tab of the Google Sheet, operation read.\nIn: The single item from Init Run. Sheet id 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nOut: One item per config row, each a key and a value.\nWhy: executeOnce, alwaysOutputData and one retry (maxTries 2), so an empty tab does not kill the run.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -87,6 +91,7 @@
     {
       "id": "sh4_cal",
       "name": "Read Calendar",
+      "notes": "What: Reads the Calendar tab of the same Google Sheet, operation read.\nIn: The config rows from Read Config, which it does not use because executeOnce is set.\nOut: One item per calendar row, the post plan with status, format, pillar, slot and judge scores.\nWhy: Same executeOnce and one-retry pattern, and chaining after Config keeps both reads on one branch.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -120,6 +125,7 @@
     {
       "id": "code_selpub",
       "name": "Select Published",
+      "notes": "What: Code node keeping only rows whose status is published and whose post_id matches b<n>-p<n>.\nIn: Calendar rows on the main input; both tabs are re-read by node name inside the code.\nOut: One item per published post, the row plus follower_base, publish_mode, graph_api_version and token.\nWhy: It throws a named error when no row qualifies, and each config lookup falls back to a default.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -133,6 +139,7 @@
     {
       "id": "switch_mode4",
       "name": "Mode?",
+      "notes": "What: Switch that routes each post by the publish_mode value taken from Config.\nIn: One item per published post from Select Published.\nOut: Output DryRun when publish_mode equals dry_run, output Live when it equals live.\nWhy: No fallback output is set, so a publish_mode that is neither value drops the post silently.",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
@@ -198,6 +205,7 @@
     {
       "id": "code_sim4",
       "name": "Engagement Simulator",
+      "notes": "What: Code node that simulates reach and engagement from followers, format, hour, pillar and caption.\nIn: One published post at a time, runOnceForEachItem, from the DryRun output of Mode?.\nOut: A row with source synthetic: reach, likes, comments, saves, shares, video_views, engagement_total, er.\nWhy: The seed is an FNV hash of post_id fed to mulberry32, so the same post always gets the same numbers.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -212,6 +220,7 @@
     {
       "id": "http_insights",
       "name": "Get Insights",
+      "notes": "What: HTTP GET on the graph.facebook.com media insights endpoint for one post's metrics.\nIn: One post from the Live output of Mode?, supplying media_id, graph_api_version and ig_access_token.\nOut: The Graph reply, a data list holding reach, likes, comments, saved, shares and views.\nWhy: media_id must already be on the Calendar row, and the token is sent in the query string.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -227,6 +236,7 @@
     {
       "id": "code_norm4",
       "name": "Normalize Insights",
+      "notes": "What: Code node that reshapes the Graph reply into the simulator's row shape, mapping saved to saves.\nIn: One Graph reply at a time, plus the matching input item read back with $('Mode?').item.\nOut: A row with source live, the same fields as the simulator, blank watch rate and an ISO measured_at.\nWhy: A helper returns 0 for any missing metric and ER falls back to 0 when reach is 0, so no NaN spreads.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -241,6 +251,7 @@
     {
       "id": "sh4_metrics",
       "name": "Upsert Metrics",
+      "notes": "What: Writes each metrics row to the Metrics tab with appendOrUpdate, matching on post_id.\nIn: Metrics rows from either the simulator or the live normalizer, auto mapped from the item fields.\nOut: The written rows, passed on to the aggregation step.\nWhy: Matching on post_id means a rerun overwrites each post's row instead of appending a new one.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -282,6 +293,7 @@
     {
       "id": "code_agg",
       "name": "Aggregate Stats",
+      "notes": "What: Code node that groups metrics by batch_id into means, breakdowns, post detail, top and bottom.\nIn: All metrics rows returned by Upsert Metrics.\nOut: One item holding agg per batch, the batch list, latest_batch, next_batch and metrics_count.\nWhy: Each dimension is grouped twice, by ER and by absolute engagement, the agent's stated target.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -295,6 +307,7 @@
     {
       "id": "agent_analyst",
       "name": "Performance Analyst",
+      "notes": "What: AI agent that reads the batch aggregates and writes a short summary plus 3 to 5 directives.\nIn: The agg object as JSON text in the prompt, with latest_batch and next_batch named, labelled simulated.\nOut: One item whose output field holds a summary string and a learnings array of directives.\nWhy: The system message sets the target metric and tells it to own and correct a past directive that hurt.",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
@@ -315,6 +328,7 @@
     {
       "id": "lm_analyst",
       "name": "Analyst Model",
+      "notes": "What: OpenRouter chat model node running anthropic/claude-haiku-4.5 at temperature 0.4 and 4000 max tokens.\nIn: Prompts from the two nodes it feeds, over the ai_languageModel connection.\nOut: Model completions back to those nodes.\nWhy: It attaches to both Performance Analyst and Learnings Schema, whose autoFix needs a model of its own.",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
@@ -337,6 +351,7 @@
     {
       "id": "parser_learn",
       "name": "Learnings Schema",
+      "notes": "What: Structured output parser holding a manual JSON schema for a summary and a learnings array.\nIn: The raw model text from Performance Analyst, attached to it over the ai_outputParser connection.\nOut: A parsed object where learnings is required and each item needs insight_type, dimension and directive.\nWhy: autoFix is on and evidence is left optional, so a missing citation cannot fail the whole run.",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
@@ -352,6 +367,7 @@
     {
       "id": "code_learn_rows",
       "name": "Emit Learnings Rows",
+      "notes": "What: Code node that turns the agent's learnings array into at most five rows; the summary is not saved.\nIn: The parsed agent output, plus latest_batch and next_batch read back from Aggregate Stats.\nOut: Rows keyed b<next>-<dimension>-<n>, with batch_id, applied_in_batch, created_at and the agent fields.\nWhy: The id embeds the model's dimension word, so a rerun with new wording adds rows instead of updating.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -365,6 +381,7 @@
     {
       "id": "sh4_learn",
       "name": "Upsert Learnings",
+      "notes": "What: Writes the directive rows to the Learnings tab with appendOrUpdate, matching on learning_id.\nIn: Up to five learning rows from Emit Learnings Rows, auto mapped.\nOut: The written rows, passed on to the RunLog read.\nWhy: Matching on learning_id means a rerun that rebuilds the same ids overwrites those rows in place.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -406,6 +423,7 @@
     {
       "id": "sh4_runlog_read",
       "name": "Read RunLog",
+      "notes": "What: Reads the RunLog tab of the same Google Sheet, operation read.\nIn: The learning rows from the previous node, which it ignores because executeOnce is set.\nOut: Every RunLog row in the tab, each carrying a workflow name, batch_id, duration_s and cost fields.\nWhy: Compute Benchmarks needs the WF2-content-studio rows to recover cost_per_post_usd and duration_s.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -439,6 +457,7 @@
     {
       "id": "code_bench",
       "name": "Compute Benchmarks",
+      "notes": "What: Code node computing brand, Arabic, lint, judge uplift, ER, engagement, reach, cost and latency scores.\nIn: Aggregates, calendar rows and run log rows, all pulled back by node name, looped over every batch.\nOut: One row per metric per batch with benchmark_id, metric, value, unit and method, plus last-two deltas.\nWhy: The three simulator metrics carry a method text starting with SYNTHETIC, so nobody reads them as real.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -452,6 +471,7 @@
     {
       "id": "sh4_bench",
       "name": "Upsert Benchmarks",
+      "notes": "What: Writes the scoreboard rows to the Benchmarks tab with appendOrUpdate, matching on benchmark_id.\nIn: All benchmark rows from Compute Benchmarks, auto mapped.\nOut: The written rows, passed on to the run stats step.\nWhy: Ids are rebuilt the same way each run, so the tab stays a fixed size instead of growing every day.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -493,6 +513,7 @@
     {
       "id": "code_stats4",
       "name": "Run Stats",
+      "notes": "What: Code node that builds one audit row for this run, including the duration in seconds.\nIn: run_id and started_at from Init Run, plus latest_batch, metrics_count and batches from Aggregate Stats.\nOut: run_id, workflow WF4-analyst, batch_id, started_at, finished_at, duration_s, posts_count and notes.\nWhy: llm_cost_usd and cost_per_post_usd are left empty, and the cost benchmark reads WF2 rows anyway.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -506,6 +527,7 @@
     {
       "id": "sh4_runlog",
       "name": "Log Run",
+      "notes": "What: Appends the audit row to the RunLog tab, operation append.\nIn: The single run stats row, auto mapped from its fields.\nOut: The appended row, which is also the HTTP reply body when the run came in through the webhook.\nWhy: Append, not the appendOrUpdate used by the other three writes, so each run leaves its own line.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [

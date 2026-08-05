@@ -4,6 +4,7 @@
     {
       "id": "whu",
       "name": "Webhook",
+      "notes": "What: Starts the clear helper when someone posts a JSON body naming the range to wipe.\nIn: A POST to the webhook path instabay-util-clear carrying a JSON body with a range field.\nOut: One item whose body holds the posted JSON, so the clear call reads body.range.\nWhy: The webhook sets no authentication, so anyone who knows the URL can clear cells in that sheet.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -21,6 +22,7 @@
     {
       "id": "http_clear",
       "name": "Clear Range",
+      "notes": "What: Empties the cells of an A1 range in sheet file 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nIn: The body.range, URL-encoded into a POST to the Sheets values path ending in :clear, OAuth2 auth.\nOut: Google's clear reply, which holds spreadsheetId and the clearedRange that was emptied.\nWhy: The clear call removes values only and leaves the tab, its rows and its formatting in place.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -43,6 +45,7 @@
     {
       "id": "set_resu",
       "name": "Result",
+      "notes": "What: Keeps one field, clearedRange, copied from the clear reply, and drops everything else.\nIn: The clear reply item carrying spreadsheetId and clearedRange.\nOut: A single item with only the clearedRange string, which becomes the webhook response body.\nWhy: responseMode is lastNode, so this node's output, not the raw API body, is the caller's reply.",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [

@@ -4,6 +4,7 @@
     {
       "id": "sched3",
       "name": "Schedule",
+      "notes": "What: Starts the publisher on a timer so due posts go out without anyone opening n8n.\nIn: No input; the rule is an interval, field hours with hoursInterval 1, so once an hour in Africa/Cairo.\nOut: A single trigger item with no request body, which starts the run.\nWhy: The workflow timezone is Africa/Cairo in settings, and the rule sets no explicit minute of the hour.",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
@@ -24,6 +25,7 @@
     {
       "id": "wh3",
       "name": "Webhook",
+      "notes": "What: Lets a person or another workflow start a publish run on demand over HTTP.\nIn: A POST to the path instabay-publish, with an optional JSON body carrying a force flag.\nOut: One item holding the request, including its body, passed to Init Run.\nWhy: responseMode is lastNode, so the caller waits and receives the final node output as the reply.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -41,6 +43,7 @@
     {
       "id": "code_init3",
       "name": "Init Run",
+      "notes": "What: Code node that stamps the run with an id and a start time and reads the force flag from the body.\nIn: The single trigger item; only the webhook path supplies a body, the schedule item has none.\nOut: One item with run_id of wf3- plus the execution id, started_at as an ISO time, and force as a boolean.\nWhy: force accepts boolean true and the string true, because a webhook body often sends the flag as text.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -54,6 +57,7 @@
     {
       "id": "sh3_config",
       "name": "Read Config",
+      "notes": "What: Reads the Config tab of the project spreadsheet with the read operation.\nIn: The single item from Init Run; document id 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nOut: One item per Config row, each carrying a key column and a value column.\nWhy: executeOnce is on and maxTries is 2, so settings are fetched once per run with one retry on failure.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -87,6 +91,7 @@
     {
       "id": "sh3_cal",
       "name": "Read Calendar",
+      "notes": "What: Reads the Calendar tab, which holds every planned post and its status.\nIn: The Config rows from Read Config; executeOnce means it runs once, on the first item only.\nOut: One item per Calendar row, with fields such as post_id, status, publish_at, format and image_url.\nWhy: Same spreadsheet and the same executeOnce plus maxTries 2, so one run makes one read here.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -120,6 +125,7 @@
     {
       "id": "code_due",
       "name": "Select Due",
+      "notes": "What: Code node that keeps approved Calendar rows whose publish_at has passed, and attaches API settings.\nIn: Rows from Read Calendar, the key and value rows from Read Config, and the force flag from Init Run.\nOut: One item per due post: the row plus publish_mode, ig_user_id, graph_api_version and ig_access_token.\nWhy: force true skips the publish_at test, and publish_mode falls back to dry_run when Config has no value.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -133,6 +139,7 @@
     {
       "id": "switch_mode",
       "name": "Publish Mode?",
+      "notes": "What: Splits the run into a dry run branch and a live publishing branch on one Config value.\nIn: Each due post item from Select Due, carrying its publish_mode value.\nOut: DryRun output when publish_mode equals dry_run, Live output when it equals live; item unchanged.\nWhy: No fallback output is set, so a typo or an empty setting drops the post instead of publishing it.",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
@@ -198,6 +205,7 @@
     {
       "id": "code_sim",
       "name": "Simulate Publish",
+      "notes": "What: Code node that builds the exact Graph API call sequence a real publish would make, without sending it.\nIn: One due post at a time from the DryRun output, with format, image_url, captions, hashtags and topic.\nOut: post_id, status published, media_id of DRYRUN_ plus the post id, published_at and api_payload_log.\nWhy: The log opens with a step 0 quota check; a format that is not reel or carousel logs the image calls.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -212,6 +220,7 @@
     {
       "id": "http_quota",
       "name": "Check Quota",
+      "notes": "What: GET on the Graph API content_publishing_limit edge for the IG user, reading quota_usage.\nIn: One item from the Live output of Publish Mode?, supplying version, user id and token to the URL.\nOut: The raw Graph reply, which Quota Guard reads as data[0].quota_usage.\nWhy: The access token travels in the URL query string from Config, not through an n8n credential.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -227,6 +236,7 @@
     {
       "id": "code_quota_guard",
       "name": "Quota Guard",
+      "notes": "What: Code node that throws at the posting limit, then puts the original post row back on the item.\nIn: The Graph quota reply for one item, plus the matching item pulled back from Publish Mode? by name.\nOut: The original due post item, unchanged, when quota_usage is missing or below 100.\nWhy: It throws only at 100 or more, so a reply it cannot read is not treated as hitting the limit.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -241,6 +251,7 @@
     {
       "id": "switch_media",
       "name": "Media Type?",
+      "notes": "What: Routes each post to the reel, image or carousel publishing path on the format field.\nIn: One due post item from Quota Guard, carrying its format value.\nOut: Reel output for reel, Image for image, Carousel for carousel; the item passes through unchanged.\nWhy: No fallback output is set, so an unknown format is dropped instead of taking the wrong path.",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
@@ -330,6 +341,7 @@
     {
       "id": "http_reel_container",
       "name": "Create Reel Container",
+      "notes": "What: POSTs to the Graph API media edge to create an unpublished REELS container with share_to_feed true.\nIn: One reel item from Media Type?; the body sends video_url, captions, hashtags, share_to_feed and token.\nOut: The Graph reply holding the new container id.\nWhy: A missing video_url sends the literal SET_PUBLIC_HTTPS_VIDEO_URL, so the call fails loudly, not quietly.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -371,6 +383,7 @@
     {
       "id": "wait_reel",
       "name": "Wait 60s",
+      "notes": "What: Pauses the reel branch for one minute so Instagram can process the uploaded video.\nIn: The container reply from Create Reel Container, and every retry sent back by Poll Guard.\nOut: The same item, released after a 60 second time interval, into Poll Container.\nWhy: The dry run log notes that publishing while IN_PROGRESS returns error 9007, so the run waits first.",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -387,6 +400,7 @@
     {
       "id": "http_poll",
       "name": "Poll Container",
+      "notes": "What: GETs the container object with fields set to status_code, to see whether the reel is ready.\nIn: Values read by node name: container id from Create Reel Container, version and token from Select Due.\nOut: The Graph reply carrying status_code, which the next node compares against FINISHED.\nWhy: The container reply holds only an id, so the version and token are read back from Select Due.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -402,6 +416,7 @@
     {
       "id": "if_ready",
       "name": "Container Ready?",
+      "notes": "What: Checks whether the reel container reports FINISHED and sends it forward or back to wait.\nIn: The poll reply for one reel, with its status_code string.\nOut: True branch goes to Publish Reel; false branch goes to Poll Guard and back into the wait loop.\nWhy: The test is a strict string equals on FINISHED, so any other status loops round again.",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -435,6 +450,7 @@
     {
       "id": "code_poll_guard",
       "name": "Poll Guard",
+      "notes": "What: Code node that counts loop passes and throws once the reel has been polled too many times.\nIn: The not ready items from the false output of Container Ready?, plus the node run index.\nOut: The same items unchanged, sent back to Wait 60s, unless the run index has already reached 10.\nWhy: It throws instead of marking the row, so a stuck reel ends the run with no Calendar update.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -448,6 +464,7 @@
     {
       "id": "http_publish_reel",
       "name": "Publish Reel",
+      "notes": "What: POSTs to the Graph API media_publish edge of the IG user to publish the finished reel container.\nIn: creation_id read from Create Reel Container, with version, user id and token read from Select Due.\nOut: The Graph reply carrying the new media id.\nWhy: It runs only on the FINISHED branch, so the container is published after encoding has completed.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -477,6 +494,7 @@
     {
       "id": "http_img_container",
       "name": "Create Image Container",
+      "notes": "What: POSTs to the Graph API media edge of the IG user to create an unpublished single image container.\nIn: One item from the Image output of Media Type?, with image_url, the two captions, hashtags and topic.\nOut: The Graph reply holding the new container id.\nWhy: The caption joins caption_en, caption_ar and hashtags, and alt_text is filled from the topic field.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -514,6 +532,7 @@
     {
       "id": "http_publish_img",
       "name": "Publish Image",
+      "notes": "What: POSTs to the Graph API media_publish edge to publish the image container straight away.\nIn: creation_id from the container reply on the current item; version, user id and token from Select Due.\nOut: The Graph reply carrying the new media id.\nWhy: The image path has no polling, so it is two calls where the reel path adds a wait and poll loop.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -543,6 +562,7 @@
     {
       "id": "set_carousel_todo",
       "name": "Carousel TODO",
+      "notes": "What: Set node that marks a carousel post as failed and records why the live path was not built.\nIn: One item from the Carousel output of Media Type?.\nOut: Only four fields: post_id, status failed, an empty media_id, and a note in api_payload_log.\nWhy: The note names the missing child container loop, so the gap sits in the data instead of being hidden.",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
@@ -584,6 +604,7 @@
     {
       "id": "code_norm_live",
       "name": "Normalize Live Result",
+      "notes": "What: Code node that turns any of the three live branch replies into one common result shape.\nIn: One reply at a time from Publish Reel, Publish Image or Carousel TODO, plus the row from Media Type?.\nOut: post_id, status published or failed, media_id, published_at and api_payload_log.\nWhy: This shape matches what Simulate Publish emits, so the sheet writer never needs to know which path ran.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -598,6 +619,7 @@
     {
       "id": "sh3_update",
       "name": "Update Published",
+      "notes": "What: Writes each result back onto the Calendar row of the post it belongs to.\nIn: Result items from Simulate Publish or Normalize Live Result, both carrying the same five fields.\nOut: Updated rows on the Calendar tab, using appendOrUpdate matched on the post_id column.\nWhy: Matching on post_id means a rerun overwrites the same row instead of adding duplicates.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -639,6 +661,7 @@
     {
       "id": "code_stats3",
       "name": "Run Stats",
+      "notes": "What: Code node that builds one summary row for the run, with timing, post count and the mode used.\nIn: Every item from Update Published, run_id and started_at from Init Run, publish_mode from Select Due.\nOut: One row with run_id, workflow WF3-publisher, batch_id, timings, duration_s, posts_count and notes.\nWhy: batch_id comes from a regex on the first post_id, and the two cost fields are written empty.",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -652,6 +675,7 @@
     {
       "id": "sh3_runlog",
       "name": "Log Run",
+      "notes": "What: Appends the run summary as a new line in the run history tab.\nIn: The single summary item from Run Stats.\nOut: One new row on the RunLog tab of the same spreadsheet, appended with auto mapped input data.\nWhy: Append rather than update, so every run keeps its own line; maxTries 2 gives one retry if Sheets fails.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [

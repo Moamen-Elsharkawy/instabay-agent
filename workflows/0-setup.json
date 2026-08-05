@@ -4,6 +4,7 @@
     {
       "id": "wh_setup",
       "name": "Webhook",
+      "notes": "What: Entry point of the setup run that builds the InstaBay Command Center sheet.\nIn: A POST to the webhook path instabay-setup; it is the only trigger in the workflow.\nOut: One item holding the request headers, query and body, passed to Create Spreadsheet.\nWhy: responseMode is lastNode, so the caller waits and gets the Result node output as the reply.",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -21,6 +22,7 @@
     {
       "id": "http_create_ss",
       "name": "Create Spreadsheet",
+      "notes": "What: Creates a Google Sheet titled InstaBay Command Center with seven empty tabs.\nIn: The item from Webhook. The request body is unused; this node sends a fixed JSON payload.\nOut: The Sheets API reply for the new file, including spreadsheetId and spreadsheetUrl.\nWhy: One POST to the Sheets v4 spreadsheets endpoint makes all seven tabs; retryOnFail gives it 2 tries.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -48,6 +50,7 @@
     {
       "id": "http_headers",
       "name": "Write Headers And Seeds",
+      "notes": "What: Writes the header row into all seven tabs, plus seven Config seed rows led by publish_mode dry_run.\nIn: The URL takes $json.spreadsheetId from Create Spreadsheet; the body values are all hardcoded.\nOut: The values:batchUpdate reply, including totalUpdatedSheets, the count of tabs that got rows.\nWhy: One RAW batchUpdate covers Brand, Config, Calendar, Metrics, Learnings, RunLog and Benchmarks.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -75,6 +78,7 @@
     {
       "id": "set_result",
       "name": "Result",
+      "notes": "What: Set node that builds the final response from three assignments, all typed string.\nIn: The batchUpdate reply from Write Headers And Seeds, plus a back-reference to Create Spreadsheet.\nOut: One item carrying only spreadsheetId, spreadsheetUrl and tabsWritten from totalUpdatedSheets.\nWhy: It is the last node, so responseMode lastNode returns these three fields to the webhook caller.",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
