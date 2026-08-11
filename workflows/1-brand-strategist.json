@@ -17,7 +17,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "e91e0cd2-8fb2-4120-bce0-9cde42795430"
+      "webhookId": ""
     },
     {
       "id": "set_brief",
@@ -129,7 +129,7 @@
     {
       "id": "sheets_brand",
       "name": "Write Brand",
-      "notes": "What: Appends one row to the Brand tab of spreadsheet 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nIn: The single flat item from Flatten Brand, auto mapped to columns by field name.\nOut: The appended row, passed on to Run Stats.\nWhy: The operation is append, never update, so every run keeps its own version of the constitution.",
+      "notes": "What: Appends one row to the Brand tab of spreadsheet YOUR_GOOGLE_SHEET_ID.\nIn: The single flat item from Flatten Brand, auto mapped to columns by field name.\nOut: The appended row, passed on to Run Stats.\nWhy: The operation is append, never update, so every run keeps its own version of the constitution.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -143,7 +143,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -197,7 +197,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -255,7 +255,7 @@
               "id": "r4",
               "name": "sheet",
               "type": "string",
-              "value": "https://docs.google.com/spreadsheets/d/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/edit"
+              "value": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
             }
           ]
         },

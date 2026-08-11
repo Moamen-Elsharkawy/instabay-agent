@@ -38,7 +38,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "c8d1e06a-802c-4c5c-9518-50d82466a28e"
+      "webhookId": ""
     },
     {
       "id": "code_init4",
@@ -57,7 +57,7 @@
     {
       "id": "sh4_config",
       "name": "Read Config",
-      "notes": "What: Reads the Config tab of the Google Sheet, operation read.\nIn: The single item from Init Run. Sheet id 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nOut: One item per config row, each a key and a value.\nWhy: executeOnce, alwaysOutputData and one retry (maxTries 2), so an empty tab does not kill the run.",
+      "notes": "What: Reads the Config tab of the Google Sheet, operation read.\nIn: The single item from Init Run. Sheet id YOUR_GOOGLE_SHEET_ID.\nOut: One item per config row, each a key and a value.\nWhy: executeOnce, alwaysOutputData and one retry (maxTries 2), so an empty tab does not kill the run.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -73,7 +73,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -107,7 +107,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -265,7 +265,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -395,7 +395,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -439,7 +439,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -485,7 +485,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -541,7 +541,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,

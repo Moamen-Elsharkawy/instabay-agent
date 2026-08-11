@@ -17,12 +17,12 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "1248cf54-e402-4ea1-8cdf-8abb9de31b1d"
+      "webhookId": ""
     },
     {
       "id": "http_read",
       "name": "Read Range",
-      "notes": "What: Reads any A1 range from the hardcoded sheet file 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nIn: The body.range as an A1 string, sent as a GET to the Sheets values path with OAuth2 auth.\nOut: The raw Google reply with the resolved range, majorDimension, and a values array of rows if any.\nWhy: The range goes through encodeURIComponent, so a tab name with spaces still builds a valid URL.",
+      "notes": "What: Reads any A1 range from the hardcoded sheet file YOUR_GOOGLE_SHEET_ID.\nIn: The body.range as an A1 string, sent as a GET to the Sheets values path with OAuth2 auth.\nOut: The raw Google reply with the resolved range, majorDimension, and a values array of rows if any.\nWhy: The range goes through encodeURIComponent, so a tab name with spaces still builds a valid URL.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -31,7 +31,7 @@
       ],
       "parameters": {
         "method": "GET",
-        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/values/{{ encodeURIComponent($json.body.range) }}",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/{{ encodeURIComponent($json.body.range) }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleSheetsOAuth2Api",
         "options": {}

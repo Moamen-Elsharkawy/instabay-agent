@@ -17,12 +17,12 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "56f4bcab-22d7-4376-a541-311a493e3f3c"
+      "webhookId": ""
     },
     {
       "id": "http_clear",
       "name": "Clear Range",
-      "notes": "What: Empties the cells of an A1 range in sheet file 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nIn: The body.range, URL-encoded into a POST to the Sheets values path ending in :clear, OAuth2 auth.\nOut: Google's clear reply, which holds spreadsheetId and the clearedRange that was emptied.\nWhy: The clear call removes values only and leaves the tab, its rows and its formatting in place.",
+      "notes": "What: Empties the cells of an A1 range in sheet file YOUR_GOOGLE_SHEET_ID.\nIn: The body.range, URL-encoded into a POST to the Sheets values path ending in :clear, OAuth2 auth.\nOut: Google's clear reply, which holds spreadsheetId and the clearedRange that was emptied.\nWhy: The clear call removes values only and leaves the tab, its rows and its formatting in place.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
@@ -31,7 +31,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://sheets.googleapis.com/v4/spreadsheets/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/values/{{ encodeURIComponent($json.body.range) }}:clear",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/{{ encodeURIComponent($json.body.range) }}:clear",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleSheetsOAuth2Api",
         "options": {}

@@ -38,7 +38,7 @@
         "responseMode": "onReceived",
         "options": {}
       },
-      "webhookId": "5baf23ec-27d3-4b87-bc2e-ca01811dc621"
+      "webhookId": ""
     },
     {
       "id": "code_init2",
@@ -83,7 +83,7 @@
     {
       "id": "sh_read_brand",
       "name": "Read Brand",
-      "notes": "What: Reads every row of the Brand tab so the run has the brand constitution.\nIn: The item from Cost Before; executeOnce so it reads only one time.\nOut: All Brand rows, one item per row, carrying brand_name, posting_cadence and the hashtag lists.\nWhy: read operation on tab Brand of spreadsheet 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.",
+      "notes": "What: Reads every row of the Brand tab so the run has the brand constitution.\nIn: The item from Cost Before; executeOnce so it reads only one time.\nOut: All Brand rows, one item per row, carrying brand_name, posting_cadence and the hashtag lists.\nWhy: read operation on tab Brand of spreadsheet YOUR_GOOGLE_SHEET_ID.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -99,7 +99,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -133,7 +133,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -167,7 +167,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -201,7 +201,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -500,7 +500,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -536,7 +536,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const rows = $input.all().map(i=>i.json);\nconst batch = rows.length ? rows[0].batch_id : '?';\nconst esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');\nconst approval_url = $execution.resumeFormUrl;\nlet html = '<h2>InstaBay content batch ' + batch + ' - approval needed</h2>';\nhtml += '<p><a href=\"' + approval_url + '\"><b>Open the approval form</b></a> to approve all or request changes.</p>';\nhtml += '<p>' + rows.length + ' posts:</p>';\nfor (const r of rows){\n  html += '<hr><h3>' + esc(r.post_id) + ' | ' + esc(r.format) + ' | ' + esc(r.pillar) + ' | ' + esc(r.publish_at) + '</h3>'\n  + '<p><b>Topic:</b> ' + esc(r.topic) + '</p>'\n  + '<p><b>EN:</b> ' + esc(r.caption_en).replace(/\\n/g,'<br>') + '</p>'\n  + '<p dir=\"rtl\" style=\"text-align:right\"><b>AR:</b> ' + esc(r.caption_ar).replace(/\\n/g,'<br>') + '</p>'\n  + '<p><b>Hashtags:</b> ' + esc(r.hashtags) + '</p>'\n  + '<p><b>Judge:</b> brand ' + r.judge_brand_score + '/5, arabic ' + r.judge_arabic_score + '/5, platform ' + r.judge_platform_score + '/5 | lint ' + r.lint_pass + '</p>'\n  + (r.format==='reel' ? '<p><b>Reel hook:</b> ' + esc(r.reel_hook) + '<br><b>Storyboard:</b> ' + esc(r.reel_storyboard) + '</p>' : '')\n  + '<p><a href=\"' + r.image_url + '\">visual preview</a></p>';\n}\nhtml += '<hr><p>Sheet: https://docs.google.com/spreadsheets/d/1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk/edit</p>';\nreturn [{json:{subject: 'InstaBay batch ' + batch + ': approve ' + rows.length + ' posts', html, batch_id: batch, posts_count: rows.length, approval_url}}];"
+        "jsCode": "const rows = $input.all().map(i=>i.json);\nconst batch = rows.length ? rows[0].batch_id : '?';\nconst esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');\nconst approval_url = $execution.resumeFormUrl;\nlet html = '<h2>InstaBay content batch ' + batch + ' - approval needed</h2>';\nhtml += '<p><a href=\"' + approval_url + '\"><b>Open the approval form</b></a> to approve all or request changes.</p>';\nhtml += '<p>' + rows.length + ' posts:</p>';\nfor (const r of rows){\n  html += '<hr><h3>' + esc(r.post_id) + ' | ' + esc(r.format) + ' | ' + esc(r.pillar) + ' | ' + esc(r.publish_at) + '</h3>'\n  + '<p><b>Topic:</b> ' + esc(r.topic) + '</p>'\n  + '<p><b>EN:</b> ' + esc(r.caption_en).replace(/\\n/g,'<br>') + '</p>'\n  + '<p dir=\"rtl\" style=\"text-align:right\"><b>AR:</b> ' + esc(r.caption_ar).replace(/\\n/g,'<br>') + '</p>'\n  + '<p><b>Hashtags:</b> ' + esc(r.hashtags) + '</p>'\n  + '<p><b>Judge:</b> brand ' + r.judge_brand_score + '/5, arabic ' + r.judge_arabic_score + '/5, platform ' + r.judge_platform_score + '/5 | lint ' + r.lint_pass + '</p>'\n  + (r.format==='reel' ? '<p><b>Reel hook:</b> ' + esc(r.reel_hook) + '<br><b>Storyboard:</b> ' + esc(r.reel_storyboard) + '</p>' : '')\n  + '<p><a href=\"' + r.image_url + '\">visual preview</a></p>';\n}\nhtml += '<hr><p>Sheet: https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit</p>';\nreturn [{json:{subject: 'InstaBay batch ' + batch + ': approve ' + rows.length + ' posts', html, batch_id: batch, posts_count: rows.length, approval_url}}];"
       }
     },
     {
@@ -636,7 +636,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -718,7 +718,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -772,7 +772,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -840,7 +840,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -892,7 +892,7 @@
         }
       },
       "onError": "continueRegularOutput",
-      "webhookId": "b7a8218e-ee82-41b8-8a31-8d0824c5affc"
+      "webhookId": ""
     },
     {
       "id": "wait_approval",
@@ -937,7 +937,7 @@
         },
         "options": {}
       },
-      "webhookId": "b23b2854-d0d4-4122-8825-0fdbb9e7a8f6"
+      "webhookId": ""
     }
   ],
   "connections": {

@@ -38,7 +38,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "121ba2a6-eeb5-4106-9c73-86ab0c108e86"
+      "webhookId": ""
     },
     {
       "id": "code_init3",
@@ -57,7 +57,7 @@
     {
       "id": "sh3_config",
       "name": "Read Config",
-      "notes": "What: Reads the Config tab of the project spreadsheet with the read operation.\nIn: The single item from Init Run; document id 1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk.\nOut: One item per Config row, each carrying a key column and a value column.\nWhy: executeOnce is on and maxTries is 2, so settings are fetched once per run with one retry on failure.",
+      "notes": "What: Reads the Config tab of the project spreadsheet with the read operation.\nIn: The single item from Init Run; document id YOUR_GOOGLE_SHEET_ID.\nOut: One item per Config row, each carrying a key column and a value column.\nWhy: executeOnce is on and maxTries is 2, so settings are fetched once per run with one retry on failure.",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
@@ -73,7 +73,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -107,7 +107,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -390,7 +390,7 @@
         2060,
         40
       ],
-      "webhookId": "5f8e2d1a-7b3c-4e9f-a1d2-6c8b4a5e7f90",
+      "webhookId": "",
       "parameters": {
         "resume": "timeInterval",
         "amount": 60,
@@ -633,7 +633,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -689,7 +689,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "1idaFANX0dJtbl-ww6-Bca6WAFU6BUmwTon_wdxizXwk"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
