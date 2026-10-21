@@ -1,12 +1,21 @@
 # InstaBay - an agentic Instagram marketing teammate
 
-An agentic n8n system that runs Instagram for Insta Bay, a (fictional) Red Sea beach resort & spa in Hurghada, from brand definition to bilingual content, human approval, Instagram Graph API publishing, and measurement that improves the next batch.
+## Project status and evidence
+
+**Tested reference.** Instagram publishing was a dry run. The resort and engagement data are fictional/synthetic, not a customer account.
+
+**My contribution:** Implemented bilingual drafting, an independent cross-model judge, approval gates, dry-run publishing payloads and an analyst feedback loop.
+
+**Verification:** Historical recorded tests: eight batches and 56 generated posts; deterministic synthetic engagement.
+
+
+An agentic n8n reference system that simulates an Instagram content workflow for Insta Bay, a (fictional) Red Sea beach resort & spa in Hurghada, from brand definition to bilingual content, human approval, Instagram Graph API publishing, and measurement that improves the next batch.
 
 ![InstaBay - an agentic Instagram marketing teammate](https://raw.githubusercontent.com/Moamen-Elsharkawy/portfolio-assets/main/covers/bbit-instabay.png)
 
-> Built for the BBIT Forward-Deployed / Agentic AI Engineer challenge. Everything ran end to end on a self-hosted n8n instance: 3 weekly batches, 21 posts, 2 human approval decisions and 1 request-changes revision cycle - all real executions, no mockups.
+> Built for the BBIT Forward-Deployed / Agentic AI Engineer challenge. The local/public artifacts document three batches; later recorded deployment tests covered eight batches / 56 generated posts. Publishing stayed in dry-run and engagement was synthetic. These are tests, not a live customer campaign.
 >
-> **Video walkthrough:** [link]
+
 
 ## The problem
 
@@ -66,25 +75,11 @@ flowchart TD
 
 Three weekly batches ran end to end. Engagement is a **seeded, deterministic synthetic simulator** (labeled `source=synthetic` on every row; re-running the Analyst reproduces byte-identical metrics - verified). Ground-truth simulator constants are hidden from all agent prompts. See [engagement-simulator.md](docs/engagement-simulator.md) for what the numbers do and don't prove.
 
-| Metric | Batch 1 | Batch 2 | Batch 3 | How measured |
-|---|---|---|---|---|
-| Brand consistency (1-5) | 4.00 | 4.00 | **4.14** | Mean score by cross-vendor judge (gpt-4o-mini, temp 0, anchored G-Eval-style rubric) over all posts |
-| Arabic quality (1-5) | 4.00 | 4.00 | **4.14** | Judge `arabic_naturalness`: anti-translationese rubric ("would a native Egyptian SMM write this?") |
-| Brand lint pass rate | 100% | 100% | 100% | Deterministic: always-on hashtags present, 7-11 tags, no banned tags, lengths, bilingual presence |
-| Mean engagement / post | 58.4 | 44.3 | 54.4 | Simulator: likes+comments+saves+shares per post |
-| Mean ER | 1.67% | 1.46% | 1.63% | Simulator: engagement/reach (hospitality-benchmark-grounded constants) |
-| **Optimization uplift (target: engagement/post)** | - | **-24.1%** | **+22.8%** | (after - before) / before, batch over batch - see the honest story below |
-| Cost / post | $0.0075 | $0.0078 | $0.0020 | OpenRouter account usage delta across the run / posts (measured, not estimated; endpoint can lag slightly) |
-| Generation latency / post | 68.7s* | 29.4s* | 12.7s* | WF2 wall-clock / posts (*includes human approval wait; pure generation+judging is ~25-50s/batch-stage) |
-| Autonomy | - | - | - | Everything runs unattended except **one approval decision per weekly batch** (plus credential setup). Schedules: content Sun 09:00, publisher hourly, analyst daily 08:00 |
+Synthetic engagement measurements are described in the simulator documentation; they are not real audience results.
 
-### The optimization story (kept honest on purpose)
+### What the simulation tests
 
-- **Batch 1 -> 2: -24%.** Batch 1's reel happened to sit in the 15:00 slot, making that slot look golden. The Analyst - reasoning over engagement-*rate* aggregates - directed everything toward 15:00 and abandoned the evening slots that actually carry the simulator's hidden multiplier. Classic confounding at n=7.
-- **The fix was systemic, not a retry:** the Analyst now receives per-post detail and engagement-per-dimension aggregates (slots/pillars drive *reach*, so rate alone can't see them) plus explicit causal-hygiene instructions ("a reel inflates whatever slot it sits in - compare like-for-like; if your last directives dropped the metric, own it and correct").
-- **Batch 2 -> 3: +22.8%.** The Analyst diagnosed its own regression from cross-batch comparison ("Batch 2's removal of the evening slot cost engagement" - its literal directive), batch 3 restored evening placements, and the target metric recovered. Brand and Arabic scores also improved (4.00 -> 4.14).
-
-That trajectory - fail on confounded data, detect it, correct it - is a stronger validation of the *loop* than a clean monotonic win, and it's exactly what will happen with real Instagram data.
+The seeded simulator exercises feedback, revision and reproducibility. Its measurements are synthetic and do not predict engagement on a real account.
 
 ## What's in the repo
 
